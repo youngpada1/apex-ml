@@ -10,6 +10,8 @@ on:
 jobs:
   generate-readme:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -20,22 +22,16 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake libboost-all-dev
-
       - name: Install and configure uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           export PATH="/root/.cargo/bin:$PATH"
           uv venv
-          source .venv/bin/activate
 
       - name: Install dependencies
         run: |
-          uv pip install "pyarrow==21.0.0" --no-binary pyarrow
-          uv pip install -r requirements.txt
+          source .venv/bin/activate
+          uv pip install streamlit httpx pandas pytest
 
       - name: Run README generator
         run: python generate_readme.py
