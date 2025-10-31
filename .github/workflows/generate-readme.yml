@@ -1,39 +1,37 @@
-name: Auto-generate README
+name: Generate README
 
 on:
   push:
     branches:
-      - main
       - dev
   workflow_dispatch:
 
 jobs:
   generate-readme:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.14'
-
-      - name: Install uv
-        run: curl -Ls https://astral.sh/uv/install.sh | sh
+          python-version: 3.10
 
       - name: Install dependencies
         run: |
-          uv pip install -r requirements.txt
+          pip install -r requirements.txt
 
-      - name: Run README generator
-        run: python generate_readme.py
-
-      - name: Commit updated README
+      - name: Generate README
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          python app/generate_readme.py
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
           git add README.md
-          git commit -m "📝 Auto-generate README.md from code" || echo "No changes to commit"
-          git push
+          git commit -m "Auto-update README"
+          git push origin dev
