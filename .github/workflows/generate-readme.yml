@@ -2,9 +2,7 @@ name: Auto-generate README
 
 on:
   push:
-    branches:
-      - main
-      - dev
+    branches: [ main, dev ]
   workflow_dispatch:
 
 jobs:
@@ -15,10 +13,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.14'
 
@@ -28,13 +26,11 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        working-directory: ./apex-ml
         run: |
           uv pip install --upgrade pip
           uv pip install --system streamlit httpx pandas pytest
 
       - name: Run README generator
-        working-directory: ./apex-ml
         run: python generate_readme.py
 
       - name: Commit updated README
