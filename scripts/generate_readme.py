@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 
 def extract_docstring(file_path: str) -> str:
-    \"\"\"Extract the first module-level docstring from a Python file.\"\"\"
+    """Extract the first module-level docstring from a Python file."""
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
-    for quote in ('\"\"\"', "'''"):
+    for quote in ('"""', "'''"):
         if quote in content:
             start = content.find(quote) + 3
             end = content.find(quote, start)
@@ -14,7 +14,6 @@ def extract_docstring(file_path: str) -> str:
     return "No module docstring found."
 
 def generate_readme():
-    # Project name from folder
     project_name = Path.cwd().name
     py_files = sorted(
         [f for f in os.listdir() if f.endswith(".py") and f != "scripts/generate_readme.py"]
@@ -39,7 +38,6 @@ def generate_readme():
             readme.append(doc)
             readme.append("")
 
-    # Handle dependencies properly
     req_path = Path(__file__).resolve().parent.parent / "requirements.txt"
     readme.append("## Dependencies")
     readme.append("")
