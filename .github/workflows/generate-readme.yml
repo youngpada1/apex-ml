@@ -28,13 +28,13 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        working-directory: .
+        working-directory: ./apex-ml
         run: |
           uv pip install --upgrade pip
           uv pip install --system streamlit httpx pandas pytest
 
       - name: Run README generator
-        working-directory: .
+        working-directory: ./apex-ml
         run: python generate_readme.py
 
       - name: Commit updated README
