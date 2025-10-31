@@ -23,7 +23,7 @@ resource "github_repository_file" "workflow_generate_readme" {
   repository          = data.github_repository.repo.name
   branch              = var.branch
   file                = ".github/workflows/generate-readme.yml"
-  commit_message      = "ci: update workflow for clean README generation"
+  commit_message      = "ci: stable workflow for auto-generating README"
   overwrite_on_create = true
 
   content = <<-YAML
@@ -62,9 +62,9 @@ resource "github_repository_file" "workflow_generate_readme" {
             run: |
               git config user.name "github-actions[bot]"
               git config user.email "github-actions[bot]@users.noreply.github.com"
-              git add README.md
-              git commit -m "chore(ci): update README" || echo "No changes to commit"
-              git push
+              git add README.md || true
+              git commit -m "chore(ci): auto-generate README file" || true
+              git push || true
   YAML
 }
 
@@ -73,7 +73,7 @@ resource "github_repository_file" "generator_script" {
   repository          = data.github_repository.repo.name
   branch              = var.branch
   file                = "scripts/generate_readme.py"
-  commit_message      = "fix: simplify README generator and dependencies handling"
+  commit_message      = "fix: final clean version of README generator script"
   overwrite_on_create = true
 
   content = <<-PY
@@ -81,10 +81,10 @@ resource "github_repository_file" "generator_script" {
     from pathlib import Path
 
     def extract_docstring(file_path: str) -> str:
-        \"\"\"Extract the first module-level docstring from a Python file.\"\"\"
+        """Extract the first module-level docstring from a Python file."""
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
-        for quote in ('\"\"\"', "'''"):
+        for quote in ('"""', "'''"):
             if quote in content:
                 start = content.find(quote) + 3
                 end = content.find(quote, start)
@@ -93,7 +93,6 @@ resource "github_repository_file" "generator_script" {
         return "No module docstring found."
 
     def generate_readme():
-        # Project name from folder
         project_name = Path.cwd().name
         py_files = sorted(
             [f for f in os.listdir() if f.endswith(".py") and f != "scripts/generate_readme.py"]
@@ -118,7 +117,6 @@ resource "github_repository_file" "generator_script" {
                 readme.append(doc)
                 readme.append("")
 
-        # Handle dependencies properly
         req_path = Path(__file__).resolve().parent.parent / "requirements.txt"
         readme.append("## Dependencies")
         readme.append("")
