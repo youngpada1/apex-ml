@@ -27,19 +27,15 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      - name: Create virtual environment
-        run: uv venv
-
       - name: Install dependencies
+        working-directory: ./apex-ml
         run: |
           uv pip install --upgrade pip
-          uv pip install streamlit httpx pandas pytest
+          uv pip install --system streamlit httpx pandas pytest
 
       - name: Run README generator
-        run: |
-          . .venv/bin/activate
-          uv pip list  # Verify installed packages
-          python generate_readme.py
+        working-directory: ./apex-ml
+        run: python generate_readme.py
 
       - name: Commit updated README
         run: |
