@@ -1,12 +1,4 @@
-
----
-
-### ⚙️ `.github/workflows/generate-readme.yml`
-
-This GitHub Actions workflow will **run the Python script** and **commit the generated README.md** back to the repo automatically.
-
-```yaml
-name: Generate README
+name: Auto-generate README
 
 on:
   push:
@@ -16,31 +8,32 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  generate-readme:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       - name: Install uv
         run: curl -Ls https://astral.sh/uv/install.sh | sh
 
       - name: Install dependencies
-        run: uv pip install -r requirements.txt
+        run: |
+          uv pip install -r requirements.txt
 
-      - name: Run script to generate README
+      - name: Run README generator
         run: python generate_readme.py
 
-      - name: Commit and push README
+      - name: Commit updated README
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
-          git commit -m "Auto-generate README.md" || echo "No changes to commit"
+          git commit -m "📝 Auto-generate README.md from code" || echo "No changes to commit"
           git push
