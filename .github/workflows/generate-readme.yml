@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # ✅ required to push README updates
+  contents: write  # required for pushing changes
 
 jobs:
   generate-readme:
@@ -17,14 +17,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}  # ensures proper push auth
 
-      - name: Generate README from template
-        uses: marketplace-actions/readme-generator@v1
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          readme_path: ./README.md
-          template_path: ./README_TEMPLATE.md
+          python-version: '3.14'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Generate README
+        run: uv run python scripts/generate_readme.py
 
       - name: Commit and push README
         run: |
