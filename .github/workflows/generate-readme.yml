@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Generate README
-        uses: bitflight-devops/github-action-readme-generator@v2
+        uses: bitflight-devops/github-action-readme-generator@v1.7.2
         with:
           readme_path: ./README.md
           template_path: ./README_TEMPLATE.md
