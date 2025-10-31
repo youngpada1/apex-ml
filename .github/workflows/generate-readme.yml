@@ -1,4 +1,4 @@
-name: Auto-generate README
+name: Generate README
 
 on:
   push:
@@ -34,5 +34,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
-          git commit -m "chore(ci): auto-generate README file" || echo "No changes to commit"
+          git commit -m "chore(ci): update README" || echo "No changes to commit"
           git push
