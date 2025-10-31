@@ -18,6 +18,7 @@ data "github_repository" "repo" {
   name = var.repository
 }
 
+# --- GitHub Action Workflow ---
 resource "github_repository_file" "workflow_generate_readme" {
   repository          = data.github_repository.repo.name
   branch              = var.branch
@@ -67,11 +68,12 @@ resource "github_repository_file" "workflow_generate_readme" {
   YAML
 }
 
+# --- Python README Generator Script ---
 resource "github_repository_file" "generator_script" {
   repository          = data.github_repository.repo.name
   branch              = var.branch
   file                = "scripts/generate_readme.py"
-  commit_message      = "fix: improve README generator formatting"
+  commit_message      = "fix: update README generator for dependencies and formatting"
   overwrite_on_create = true
 
   content = <<-PY
@@ -109,6 +111,7 @@ resource "github_repository_file" "generator_script" {
             "",
         ]
 
+        # Add module docstrings
         for file in files:
             doc = extract_docstring(file)
             readme.append(f"### `{file}`")
@@ -116,16 +119,23 @@ resource "github_repository_file" "generator_script" {
             readme.append(doc)
             readme.append("")
 
-        if os.path.exists("requirements.txt"):
-            readme.append("## Dependencies")
-            readme.append("")
-            with open("requirements.txt", "r", encoding="utf-8") as reqs:
-                for dep in reqs:
-                    dep = dep.strip()
-                    if dep:
-                        readme.append(f"- {dep}")
-            readme.append("")
+        # Resolve absolute path to requirements.txt
+        req_path = Path(__file__).resolve().parent.parent / "requirements.txt"
+        readme.append("## Dependencies")
+        readme.append("")
 
+        if req_path.exists():
+            with open(req_path, "r", encoding="utf-8") as reqs:
+                deps = sorted({dep.strip() for dep in reqs if dep.strip()})
+                if deps:
+                    for dep in deps:
+                        readme.append(f"- {dep}")
+                else:
+                    readme.append("_No dependencies listed in requirements.txt._")
+        else:
+            readme.append("_No requirements.txt file found._")
+
+        readme.append("")
         readme.append("---")
         readme.append("README auto-generated via GitHub Actions.")
 
