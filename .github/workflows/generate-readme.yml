@@ -7,35 +7,32 @@ on:
       - dev
   workflow_dispatch:
 
+permissions:
+  contents: write  # allow pushing README updates
+
 jobs:
   generate-readme:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.14'
 
       - name: Install uv
-        run: curl -Ls https://astral.sh/uv/install.sh | sh
+        run: pip install uv
 
-      - name: Install dependencies
-        run: |
-          uv pip install -r requirements.txt
+      - name: Generate README
+        run: uv run python scripts/generate_readme.py
 
-      - name: Run README generator
-        run: python generate_readme.py
-
-      - name: Commit updated README
+      - name: Commit and push README
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
-          git commit -m "📝 Auto-generate README.md from code" || echo "No changes to commit"
+          git commit -m "chore(ci): auto-generate README file" || echo "No changes to commit"
           git push
