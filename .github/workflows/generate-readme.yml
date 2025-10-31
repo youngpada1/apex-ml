@@ -20,11 +20,12 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install uv
-        run: curl -Ls https://astral.sh/uv/install.sh | sh
-
-      - name: Debug requirements.txt
-        run: cat requirements.txt
+      - name: Install and configure uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="/root/.cargo/bin:$PATH"
+          uv venv
+          source .venv/bin/activate
 
       - name: Install dependencies
         run: |
