@@ -22,19 +22,24 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install and configure uv
+      - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          export PATH="/root/.cargo/bin:$PATH"
-          uv venv
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Create virtual environment
+        run: uv venv
 
       - name: Install dependencies
         run: |
-          source .venv/bin/activate
+          uv pip install --upgrade pip
           uv pip install streamlit httpx pandas pytest
 
       - name: Run README generator
-        run: python generate_readme.py
+        run: |
+          . .venv/bin/activate
+          uv pip list  # Verify installed packages
+          python generate_readme.py
 
       - name: Commit updated README
         run: |
