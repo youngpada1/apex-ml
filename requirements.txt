@@ -1,0 +1,9 @@
+---FILEPATH /requirements.txt
+---FIND
+```
+```
+---REPLACE
+```
+pytest
+```
+---COMPLETEpytest
