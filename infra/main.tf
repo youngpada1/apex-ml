@@ -136,7 +136,7 @@ resource "github_repository_file" "generator_script" {
         readme.append("---")
         readme.append("README auto-generated via GitHub Actions.")
 
-        Path("README.md").write_text("\n".join(readme), encoding="utf-8")
+        Path("README.md").write_text("\\n".join(readme), encoding="utf-8")
         print("README.md generated successfully.")
 
     if __name__ == "__main__":
