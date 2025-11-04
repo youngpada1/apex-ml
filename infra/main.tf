@@ -1,5 +1,9 @@
 terraform {
   required_version = ">= 1.6.0"
+  backend "local" {
+    # This will use workspace-specific state files
+    # Path will be: terraform.tfstate.d/<workspace>/terraform.tfstate
+  }
 
   required_providers {
     github = {
@@ -21,7 +25,7 @@ data "github_repository" "repo" {
 # --- GitHub Action Workflow ---
 resource "github_repository_file" "workflow_generate_readme" {
   repository          = data.github_repository.repo.name
-  branch              = var.branch
+  branch              = local.currrent_env.branch
   file                = ".github/workflows/generate-readme.yml"
   commit_message      = "ci: stable workflow for auto-generating README"
   overwrite_on_create = true
@@ -71,7 +75,7 @@ resource "github_repository_file" "workflow_generate_readme" {
 # --- Python README Generator Script ---
 resource "github_repository_file" "generator_script" {
   repository          = data.github_repository.repo.name
-  branch              = var.branch
+  branch              = local.current_env.branch
   file                = "scripts/generate_readme.py"
   commit_message      = "fix: final clean version of README generator script"
   overwrite_on_create = true

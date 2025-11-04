@@ -1,30 +1,79 @@
-# -----------------------
 # Terraform
-# -----------------------
-.terraform/
-*.tfstate
-*.tfstate.backup
-terraform.tfstate
-terraform.tfstate.backup
 infra/.terraform/
-infra/terraform.tfstate
-infra/terraform.tfstate.backup
+infra/.terraform.lock.hcl
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfstate.backup
+infra/terraform.tfstate.d/
+infra/*.tfvars
+infra/crash.log
+infra/crash.*.log
+infra/override.tf
+infra/override.tf.json
+infra/*_override.tf
+infra/*_override.tf.json
 
-# -----------------------
+# Secrets & Environment Variables
+*.secret
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+
 # Python
-# -----------------------
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
-.venv/
-.env/
-.python-version
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-# -----------------------
-# System / Editor files
-# -----------------------
-.DS_Store
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# AWS
+.aws/
