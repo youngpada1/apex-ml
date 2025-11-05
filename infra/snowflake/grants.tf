@@ -1,28 +1,16 @@
-resource "snowflake_grant_privileges_to_account_role" "data_engineer_to_sysadmin" {
-  account_role_name = "SYSADMIN"
-  privileges        = ["USAGE"]
-  on_account_object {
-    object_type = "ROLE"
-    object_name = snowflake_role.data_engineer.name
-  }
+resource "snowflake_grant_account_role" "data_engineer_to_sysadmin" {
+  role_name        = snowflake_role.data_engineer.name
+  parent_role_name = "SYSADMIN"
 }
 
-resource "snowflake_grant_privileges_to_account_role" "analytics_user_to_data_engineer" {
-  account_role_name = snowflake_role.data_engineer.name
-  privileges        = ["USAGE"]
-  on_account_object {
-    object_type = "ROLE"
-    object_name = snowflake_role.analytics_user.name
-  }
+resource "snowflake_grant_account_role" "analytics_user_to_data_engineer" {
+  role_name        = snowflake_role.analytics_user.name
+  parent_role_name = snowflake_role.data_engineer.name
 }
 
-resource "snowflake_grant_privileges_to_account_role" "ml_engineer_to_data_engineer" {
-  account_role_name = snowflake_role.data_engineer.name
-  privileges        = ["USAGE"]
-  on_account_object {
-    object_type = "ROLE"
-    object_name = snowflake_role.ml_engineer.name
-  }
+resource "snowflake_grant_account_role" "ml_engineer_to_data_engineer" {
+  role_name        = snowflake_role.ml_engineer.name
+  parent_role_name = snowflake_role.data_engineer.name
 }
 
 resource "snowflake_grant_privileges_to_account_role" "database_usage_data_engineer" {
