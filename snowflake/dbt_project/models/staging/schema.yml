@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: stg_sessions
+    description: Cleaned F1 session data
+    columns:
+      - name: session_key
+        description: Unique session identifier
+        tests:
+          - not_null
+          - unique
+      - name: session_type
+        description: Type of session
+
+  - name: stg_drivers
+    description: Cleaned driver data with deduplication
+    columns:
+      - name: driver_number
+        description: Driver racing number
+        tests:
+          - not_null
+      - name: full_name
+        description: Driver full name
+
+  - name: stg_laps
+    description: Cleaned lap data with valid lap times only
+    columns:
+      - name: session_key
+        description: Session identifier
+        tests:
+          - not_null
+      - name: lap_duration
+        description: Lap time in seconds
+        tests:
+          - not_null
+
+  - name: stg_positions
+    description: Cleaned position data
+    columns:
+      - name: session_key
+        description: Session identifier
+        tests:
+          - not_null
+      - name: position
+        description: Track position (1-20)
+        tests:
+          - not_null

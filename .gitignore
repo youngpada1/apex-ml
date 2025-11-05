@@ -79,3 +79,8 @@ docker-compose.override.yml
 
 # AWS
 .aws/
+
+# dbt
+snowflake/dbt_project/target/
+snowflake/dbt_project/dbt_packages/
+snowflake/dbt_project/logs/
