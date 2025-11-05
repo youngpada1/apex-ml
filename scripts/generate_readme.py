@@ -1,4 +1,5 @@
 import os
+import tomllib
 from pathlib import Path
 
 def extract_docstring(file_path: str) -> str:
@@ -46,44 +47,70 @@ def generate_readme():
         "",
         "```",
         "┌─────────────────────────────────────────────────────────────────────┐",
-        "│                    DATA ENGINEERING ARCHITECTURE                     │",
+        "│              MODERN DATA ENGINEERING ARCHITECTURE (ELT)              │",
         "└─────────────────────────────────────────────────────────────────────┘",
         "",
-        "1️⃣ DATA INGESTION",
+        "1️⃣ DATA INGESTION (Extract & Load)",
         "   ┌──────────────┐",
-        "   │  OpenF1 API  │  ← Real-time F1 data (sessions, drivers, positions)",
+        "   │  OpenF1 API  │  ← Real-time F1 data (REST API)",
+        "   └──────┬───────┘",
+        "          │",
+        "          ↓ httpx",
+        "   ┌──────────────┐",
+        "   │ extract.py   │  ← Python ETL script",
+        "   │ load.py      │  ← Loads to Snowflake RAW schema",
+        "   │ (httpx)      │  ← Async HTTP client",
         "   └──────┬───────┘",
         "          │",
         "          ↓",
+        "2️⃣ DATA WAREHOUSE (Snowflake)",
+        "   ┌────────────────────────────────────────┐",
+        "   │         APEXML_DEV Database            │",
+        "   ├────────────────────────────────────────┤",
+        "   │  📁 RAW Schema                         │",
+        "   │    • sessions   (raw API data)         │",
+        "   │    • drivers    (raw API data)         │",
+        "   │    • positions  (raw API data)         │",
+        "   │    • laps       (raw API data)         │",
+        "   ├────────────────────────────────────────┤",
+        "   │           ↓ dbt transformations        │",
+        "   ├────────────────────────────────────────┤",
+        "   │  📁 STAGING Schema (views)             │",
+        "   │    • stg_sessions   (cleaned)          │",
+        "   │    • stg_drivers    (deduplicated)     │",
+        "   │    • stg_laps       (validated)        │",
+        "   │    • stg_positions  (filtered)         │",
+        "   ├────────────────────────────────────────┤",
+        "   │           ↓ dbt transformations        │",
+        "   ├────────────────────────────────────────┤",
+        "   │  📁 ANALYTICS Schema (tables)          │",
+        "   │    • dim_drivers        (dimension)    │",
+        "   │    • fct_lap_times      (fact)         │",
+        "   │    • fct_race_results   (fact)         │",
+        "   └────────┬───────────────────────────────┘",
+        "            │",
+        "            ↓",
+        "3️⃣ TRANSFORMATION (dbt)",
         "   ┌──────────────┐",
-        "   │  ETL Script  │  ← Python (Extract, Transform, Load)",
-        "   │  (Scheduled) │  ← Runs daily via GitHub Actions / Cron",
+        "   │  dbt Core    │  ← SQL-based transformations",
+        "   │              │  ← Data quality tests",
+        "   │  • Models    │  ← RAW → STAGING → ANALYTICS",
+        "   │  • Tests     │  ← not_null, unique, custom",
+        "   │  • Docs      │  ← Auto-generated lineage",
         "   └──────┬───────┘",
         "          │",
         "          ↓",
-        "2️⃣ DATA WAREHOUSE",
+        "4️⃣ ANALYTICS & ML",
         "   ┌──────────────┐",
-        "   │  Snowflake   │  ← Centralized data storage",
-        "   │              │",
-        "   │  Tables:     │",
-        "   │  • sessions  │  ← Race sessions metadata",
-        "   │  • drivers   │  ← Driver information",
-        "   │  • positions │  ← Lap-by-lap positions",
-        "   │  • laps      │  ← Lap times & telemetry",
-        "   └──────┬───────┘",
-        "          │",
-        "          ↓",
-        "3️⃣ ANALYTICS & ML",
-        "   ┌──────────────┐",
-        "   │  ML Model    │  ← Trained on historical data",
+        "   │  ML Model    │  ← Trained on ANALYTICS schema",
         "   │  (sklearn)   │  ← Predicts race winners",
         "   └──────┬───────┘",
         "          │",
         "          ↓",
-        "4️⃣ VISUALIZATION",
+        "5️⃣ VISUALIZATION",
         "   ┌──────────────┐",
         "   │  Streamlit   │  ← Interactive dashboard",
-        "   │  Dashboard   │  ← Connected to Snowflake",
+        "   │  Dashboard   │  ← Queries ANALYTICS schema",
         "   │              │",
         "   │  Features:   │",
         "   │  • Real-time │  ← Live race data",
@@ -92,20 +119,21 @@ def generate_readme():
         "   └──────────────┘",
         "          │",
         "          ↓",
-        "5️⃣ INFRASTRUCTURE",
+        "6️⃣ INFRASTRUCTURE",
         "   ┌──────────────┐",
         "   │  AWS EC2     │  ← Docker container",
         "   │  (t3.micro)  │  ← Hosts Streamlit app",
         "   └──────────────┘",
         "",
-        "6️⃣ CI/CD & IaC",
+        "7️⃣ CI/CD & IaC",
         "   ┌──────────────┐",
-        "   │  Terraform   │  ← Infrastructure as Code",
+        "   │  Terraform   │  ← Infrastructure as Code (IaC)",
+        "   │              │  ← Snowflake + AWS resources",
         "   │              │  ← Multi-environment (dev/staging/prod)",
         "   └──────────────┘",
         "   ┌──────────────┐",
         "   │  GitHub      │  ← CI/CD pipelines",
-        "   │  Actions     │  ← Automated testing & deployment",
+        "   │  Actions     │  ← Automated ETL + dbt runs",
         "   └──────────────┘",
         "```",
         "",
@@ -113,10 +141,13 @@ def generate_readme():
         "",
         "## 🛠️ Tech Stack",
         "",
-        "**Data Engineering:** OpenF1 API, Python 3.11+, Snowflake, GitHub Actions",
+        "**Data Ingestion:** OpenF1 API, Python 3.11+, httpx, snowflake-connector-python",
+        "**Transformation:** dbt Core, dbt-snowflake (SQL-based ELT)",
+        "**Data Warehouse:** Snowflake (RAW → STAGING → ANALYTICS schemas)",
         "**Machine Learning:** scikit-learn (Random Forest Classifier)",
         "**Visualization:** Streamlit, Altair, Plotly",
-        "**Infrastructure:** Terraform, AWS EC2, Docker",
+        "**Infrastructure:** Terraform (IaC), AWS EC2, Docker",
+        "**Package Manager:** uv (fast Python package manager)",
         "**CI/CD:** GitHub Actions, CodeQL",
         "",
         "---",
@@ -139,20 +170,37 @@ def generate_readme():
             readme.append("")
 
     # Add dependencies section
-    req_path = Path(__file__).resolve().parent.parent / "requirements.txt"
+    pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
     readme.append("## 📦 Dependencies")
     readme.append("")
+    readme.append("Managed with **uv** package manager")
+    readme.append("")
 
-    if req_path.exists():
-        with open(req_path, "r", encoding="utf-8") as f:
-            deps = [line.strip() for line in f if line.strip()]
-        if deps:
-            for dep in deps:
-                readme.append(f"- {dep}")
-        else:
-            readme.append("_No dependencies listed._")
+    if pyproject_path.exists():
+        try:
+            with open(pyproject_path, "rb") as f:
+                pyproject = tomllib.load(f)
+
+            deps = pyproject.get("project", {}).get("dependencies", [])
+            dev_deps = pyproject.get("tool", {}).get("uv", {}).get("dev-dependencies", [])
+
+            if deps:
+                readme.append("**Production:**")
+                for dep in deps:
+                    readme.append(f"- {dep}")
+                readme.append("")
+
+            if dev_deps:
+                readme.append("**Development:**")
+                for dep in dev_deps:
+                    readme.append(f"- {dep}")
+
+            if not deps and not dev_deps:
+                readme.append("_Dependencies managed via pyproject.toml_")
+        except Exception as e:
+            readme.append(f"_Error reading pyproject.toml: {e}_")
     else:
-        readme.append("_No requirements.txt file found._")
+        readme.append("_No pyproject.toml file found._")
 
     readme.append("")
     readme.append("---")
