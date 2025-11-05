@@ -145,6 +145,8 @@ Managed with **uv** package manager
 **Production:**
 - dbt-core>=1.10.13
 - dbt-snowflake>=1.10.2
+- httpx>=0.28.1
+- snowflake-connector-python>=3.18.0
 
 
 ---
