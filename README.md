@@ -37,7 +37,7 @@ ApexML is a comprehensive data engineering and machine learning platform that:
           │
           ↓ httpx
    ┌──────────────┐
-   │ extract.py   │  ← Python ELT script
+   │ extract.py   │  ← Python ETL script
    │ load.py      │  ← Loads to Snowflake RAW schema
    │ (httpx)      │  ← Async HTTP client
    └──────┬───────┘
