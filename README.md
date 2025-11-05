@@ -27,44 +27,70 @@ ApexML is a comprehensive data engineering and machine learning platform that:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    DATA ENGINEERING ARCHITECTURE                     │
+│              MODERN DATA ENGINEERING ARCHITECTURE (ELT)              │
 └─────────────────────────────────────────────────────────────────────┘
 
-1️⃣ DATA INGESTION
+1️⃣ DATA INGESTION (Extract & Load)
    ┌──────────────┐
-   │  OpenF1 API  │  ← Real-time F1 data (sessions, drivers, positions)
+   │  OpenF1 API  │  ← Real-time F1 data (REST API)
+   └──────┬───────┘
+          │
+          ↓ httpx
+   ┌──────────────┐
+   │ extract.py   │  ← Python ETL script
+   │ load.py      │  ← Loads to Snowflake RAW schema
+   │ (httpx)      │  ← Async HTTP client
    └──────┬───────┘
           │
           ↓
+2️⃣ DATA WAREHOUSE (Snowflake)
+   ┌────────────────────────────────────────┐
+   │         APEXML_DEV Database            │
+   ├────────────────────────────────────────┤
+   │  📁 RAW Schema                         │
+   │    • sessions   (raw API data)         │
+   │    • drivers    (raw API data)         │
+   │    • positions  (raw API data)         │
+   │    • laps       (raw API data)         │
+   ├────────────────────────────────────────┤
+   │           ↓ dbt transformations        │
+   ├────────────────────────────────────────┤
+   │  📁 STAGING Schema (views)             │
+   │    • stg_sessions   (cleaned)          │
+   │    • stg_drivers    (deduplicated)     │
+   │    • stg_laps       (validated)        │
+   │    • stg_positions  (filtered)         │
+   ├────────────────────────────────────────┤
+   │           ↓ dbt transformations        │
+   ├────────────────────────────────────────┤
+   │  📁 ANALYTICS Schema (tables)          │
+   │    • dim_drivers        (dimension)    │
+   │    • fct_lap_times      (fact)         │
+   │    • fct_race_results   (fact)         │
+   └────────┬───────────────────────────────┘
+            │
+            ↓
+3️⃣ TRANSFORMATION (dbt)
    ┌──────────────┐
-   │  ETL Script  │  ← Python (Extract, Transform, Load)
-   │  (Scheduled) │  ← Runs daily via GitHub Actions / Cron
+   │  dbt Core    │  ← SQL-based transformations
+   │              │  ← Data quality tests
+   │  • Models    │  ← RAW → STAGING → ANALYTICS
+   │  • Tests     │  ← not_null, unique, custom
+   │  • Docs      │  ← Auto-generated lineage
    └──────┬───────┘
           │
           ↓
-2️⃣ DATA WAREHOUSE
+4️⃣ ANALYTICS & ML
    ┌──────────────┐
-   │  Snowflake   │  ← Centralized data storage
-   │              │
-   │  Tables:     │
-   │  • sessions  │  ← Race sessions metadata
-   │  • drivers   │  ← Driver information
-   │  • positions │  ← Lap-by-lap positions
-   │  • laps      │  ← Lap times & telemetry
-   └──────┬───────┘
-          │
-          ↓
-3️⃣ ANALYTICS & ML
-   ┌──────────────┐
-   │  ML Model    │  ← Trained on historical data
+   │  ML Model    │  ← Trained on ANALYTICS schema
    │  (sklearn)   │  ← Predicts race winners
    └──────┬───────┘
           │
           ↓
-4️⃣ VISUALIZATION
+5️⃣ VISUALIZATION
    ┌──────────────┐
    │  Streamlit   │  ← Interactive dashboard
-   │  Dashboard   │  ← Connected to Snowflake
+   │  Dashboard   │  ← Queries ANALYTICS schema
    │              │
    │  Features:   │
    │  • Real-time │  ← Live race data
@@ -73,20 +99,21 @@ ApexML is a comprehensive data engineering and machine learning platform that:
    └──────────────┘
           │
           ↓
-5️⃣ INFRASTRUCTURE
+6️⃣ INFRASTRUCTURE
    ┌──────────────┐
    │  AWS EC2     │  ← Docker container
    │  (t3.micro)  │  ← Hosts Streamlit app
    └──────────────┘
 
-6️⃣ CI/CD & IaC
+7️⃣ CI/CD & IaC
    ┌──────────────┐
-   │  Terraform   │  ← Infrastructure as Code
+   │  Terraform   │  ← Infrastructure as Code (IaC)
+   │              │  ← Snowflake + AWS resources
    │              │  ← Multi-environment (dev/staging/prod)
    └──────────────┘
    ┌──────────────┐
    │  GitHub      │  ← CI/CD pipelines
-   │  Actions     │  ← Automated testing & deployment
+   │  Actions     │  ← Automated ETL + dbt runs
    └──────────────┘
 ```
 
@@ -94,10 +121,13 @@ ApexML is a comprehensive data engineering and machine learning platform that:
 
 ## 🛠️ Tech Stack
 
-**Data Engineering:** OpenF1 API, Python 3.11+, Snowflake, GitHub Actions
+**Data Ingestion:** OpenF1 API, Python 3.11+, httpx, snowflake-connector-python
+**Transformation:** dbt Core, dbt-snowflake (SQL-based ELT)
+**Data Warehouse:** Snowflake (RAW → STAGING → ANALYTICS schemas)
 **Machine Learning:** scikit-learn (Random Forest Classifier)
 **Visualization:** Streamlit, Altair, Plotly
-**Infrastructure:** Terraform, AWS EC2, Docker
+**Infrastructure:** Terraform (IaC), AWS EC2, Docker
+**Package Manager:** uv (fast Python package manager)
 **CI/CD:** GitHub Actions, CodeQL
 
 ---
@@ -110,54 +140,12 @@ No module docstring found.
 
 ## 📦 Dependencies
 
-- altair==5.5.0
-- anyio==4.11.0
-- attrs==25.4.0
-- blinker==1.9.0
-- cachetools==6.2.1
-- certifi==2025.10.5
-- charset-normalizer==3.4.4
-- click==8.3.0
-- gitdb==4.0.12
-- gitpython==3.1.45
-- h11==0.16.0
-- httpcore==1.0.9
-- httpx==0.28.1
-- idna==3.11
-- iniconfig==2.3.0
-- jinja2==3.1.6
-- jsonschema==4.25.1
-- jsonschema-specifications==2025.9.1
-- markupsafe==3.0.3
-- narwhals==2.10.0
-- numpy==2.3.4
-- packaging==25.0
-- pandas==2.3.3
-- pillow==12.0.0
-- pip==25.3
-- pluggy==1.6.0
-- protobuf==6.33.0
-- pyarrow==21.0.0
-- pydeck==0.9.1
-- pygments==2.19.2
-- pytest==8.4.2
-- python-dateutil==2.9.0.post0
-- pytz==2025.2
-- referencing==0.37.0
-- requests==2.32.5
-- rpds-py==0.28.0
-- setuptools==80.9.0
-- six==1.17.0
-- smmap==5.0.2
-- sniffio==1.3.1
-- streamlit==1.51.0
-- tenacity==9.1.2
-- toml==0.10.2
-- tornado==6.5.2
-- typing-extensions==4.15.0
-- tzdata==2025.2
-- urllib3==2.5.0
-- wheel==0.45.1
+Managed with **uv** package manager
+
+**Production:**
+- dbt-core>=1.10.13
+- dbt-snowflake>=1.10.2
+
 
 ---
 
