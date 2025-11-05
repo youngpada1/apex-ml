@@ -3,26 +3,9 @@ variable "environment" {
   type        = string
 }
 
-variable "snowflake_account" {
-  description = "Snowflake account identifier (e.g., abc12345.us-east-1)"
-  type        = string
-  sensitive   = true
-}
-
-variable "snowflake_user" {
-  description = "Snowflake admin user"
-  type        = string
-  sensitive   = true
-}
-
-variable "snowflake_password" {
-  description = "Snowflake admin password"
-  type        = string
-  sensitive   = true
-}
-
 variable "etl_service_account_password" {
-  description = "Password for ETL service account"
+  description = "Password for ETL service account (used only for initial setup)"
   type        = string
   sensitive   = true
+  default     = ""
 }

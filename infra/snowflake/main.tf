@@ -8,10 +8,13 @@ terraform {
 }
 
 provider "snowflake" {
-  account  = var.snowflake_account
-  user     = var.snowflake_user
-  password = var.snowflake_password
-  role     = "ACCOUNTADMIN"
+  # Key pair authentication (industry best practice)
+  # Uses environment variables for security:
+  # - SNOWFLAKE_ACCOUNT: Your Snowflake account identifier
+  # - SNOWFLAKE_USER: Your Snowflake username
+  # - SNOWFLAKE_PRIVATE_KEY_PATH: Path to your private key file
+
+  role = "ACCOUNTADMIN"
 }
 
 # --- RBAC: Custom Roles ---
