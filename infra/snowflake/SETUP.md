@@ -133,7 +133,27 @@ terraform apply \
 
 Type `yes` when prompted to confirm.
 
-### 7. Verify in Snowflake
+### 7. Set Up Role Hierarchy and Grants
+
+After Terraform creates the resources, run the SQL script to set up RBAC:
+
+```bash
+# Option 1: Run via Snowflake Web UI
+# - Copy contents of infra/snowflake/setup_roles.sql
+# - Open Snowflake Worksheets
+# - Paste and execute the script
+
+# Option 2: Run via SnowSQL CLI
+snowsql -a <account> -u <username> -f infra/snowflake/setup_roles.sql
+```
+
+This script sets up:
+- Role hierarchy (SYSADMIN → DATA_ENGINEER → ANALYTICS_USER, ML_ENGINEER)
+- Database, schema, and warehouse grants
+- Future grants (auto-permissions for new tables/views)
+- Service account role assignment
+
+### 8. Verify in Snowflake
 
 Log into Snowflake and verify:
 
@@ -157,6 +177,10 @@ SHOW WAREHOUSES;
 
 -- Check service account
 SHOW USERS LIKE 'ETL_SERVICE_ACCOUNT';
+
+-- Verify role grants (from setup_roles.sql)
+SHOW GRANTS TO ROLE DATA_ENGINEER;
+SHOW GRANTS TO USER ETL_SERVICE_ACCOUNT;
 ```
 
 ## What Gets Created
