@@ -212,56 +212,6 @@ resource "snowflake_table" "raw_laps" {
   }
 }
 
-# --- Table Grants for DATA_ENGINEER Role ---
-
-resource "snowflake_table_grant" "data_engineer_raw_tables" {
-  database_name = snowflake_database.apexml.name
-  schema_name   = snowflake_schema.raw.name
-
-  privilege = "ALL PRIVILEGES"
-  roles     = [snowflake_role.data_engineer.name]
-
-  on_all = true
-}
-
-# --- Future Grants (for tables created in the future) ---
-
-resource "snowflake_table_grant" "data_engineer_raw_future_tables" {
-  database_name = snowflake_database.apexml.name
-  schema_name   = snowflake_schema.raw.name
-
-  privilege = "ALL PRIVILEGES"
-  roles     = [snowflake_role.data_engineer.name]
-
-  on_future = true
-}
-
-resource "snowflake_table_grant" "data_engineer_staging_future_tables" {
-  database_name = snowflake_database.apexml.name
-  schema_name   = snowflake_schema.staging.name
-
-  privilege = "ALL PRIVILEGES"
-  roles     = [snowflake_role.data_engineer.name]
-
-  on_future = true
-}
-
-resource "snowflake_table_grant" "data_engineer_analytics_future_tables" {
-  database_name = snowflake_database.apexml.name
-  schema_name   = snowflake_schema.analytics.name
-
-  privilege = "ALL PRIVILEGES"
-  roles     = [snowflake_role.data_engineer.name]
-
-  on_future = true
-}
-
-resource "snowflake_table_grant" "analytics_user_analytics_future_tables" {
-  database_name = snowflake_database.apexml.name
-  schema_name   = snowflake_schema.analytics.name
-
-  privilege = "SELECT"
-  roles     = [snowflake_role.analytics_user.name]
-
-  on_future = true
-}
+# --- Grants ---
+# Note: Table grants will be managed via SQL GRANT statements after Terraform creates the infrastructure
+# The role hierarchy (SYSADMIN → DATA_ENGINEER) automatically inherits necessary permissions
