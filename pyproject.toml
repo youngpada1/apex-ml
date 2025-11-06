@@ -12,3 +12,8 @@ dependencies = [
     "pytest>=8.3.4",
     "streamlit>=1.40.2",
 ]
+
+[tool.uv.workspace]
+members = [
+    "tests",
+]
