@@ -16,7 +16,7 @@ def get_snowflake_connection():
         private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
         warehouse='COMPUTE_WH',
         database='APEXML_DEV',
-        schema='ANALYTICS'
+        schema='RAW_ANALYTICS'
     )
 
 @st.cache_data(ttl=300)
