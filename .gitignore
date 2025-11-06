@@ -71,6 +71,9 @@ venv.bak/
 *~
 .DS_Store
 
+# Environment variables
+.env
+
 # Logs
 *.log
 
