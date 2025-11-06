@@ -62,7 +62,7 @@ with tab1:
         st.metric("Total Laps", total_laps['CNT'].iloc[0])
 
     with col3:
-        avg_lap = query_snowflake("SELECT AVG(lap_duration_seconds) as avg FROM fct_lap_times WHERE lap_duration_seconds > 0")
+        avg_lap = query_snowflake("SELECT AVG(lap_duration) as avg FROM fct_lap_times WHERE lap_duration > 0")
         st.metric("Avg Lap Time", f"{avg_lap['AVG'].iloc[0]:.2f}s")
 
     with col4:
@@ -77,7 +77,7 @@ with tab1:
         d.full_name,
         d.team_name,
         COUNT(DISTINCT r.session_key) as races,
-        AVG(r.position) as avg_position
+        AVG(r.final_position) as avg_position
     FROM fct_race_results r
     JOIN dim_drivers d ON r.driver_number = d.driver_number
     GROUP BY d.driver_number, d.full_name, d.team_name
@@ -112,24 +112,24 @@ with tab2:
         lap_times_query = f"""
         SELECT
             lap_number,
-            lap_duration_seconds
+            lap_duration
         FROM fct_lap_times
         WHERE driver_number = {driver_num}
-        AND lap_duration_seconds > 0
+        AND lap_duration > 0
         ORDER BY lap_number
         """
         lap_times_df = query_snowflake(lap_times_query)
 
         if not lap_times_df.empty:
-            st.line_chart(lap_times_df.set_index('LAP_NUMBER')['LAP_DURATION_SECONDS'])
+            st.line_chart(lap_times_df.set_index('LAP_NUMBER')['LAP_DURATION'])
 
             # Stats
             st.subheader("Statistics")
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Best Lap", f"{lap_times_df['LAP_DURATION_SECONDS'].min():.2f}s")
+                st.metric("Best Lap", f"{lap_times_df['LAP_DURATION'].min():.2f}s")
             with col2:
-                st.metric("Average Lap", f"{lap_times_df['LAP_DURATION_SECONDS'].mean():.2f}s")
+                st.metric("Average Lap", f"{lap_times_df['LAP_DURATION'].mean():.2f}s")
             with col3:
                 st.metric("Total Laps", len(lap_times_df))
         else:
@@ -148,11 +148,11 @@ with tab3:
         d.full_name,
         d.team_name,
         l.lap_number,
-        l.lap_duration_seconds
+        l.lap_duration
     FROM fct_lap_times l
     JOIN dim_drivers d ON l.driver_number = d.driver_number
-    WHERE l.lap_duration_seconds > 0
-    ORDER BY l.lap_duration_seconds
+    WHERE l.lap_duration > 0
+    ORDER BY l.lap_duration
     LIMIT 10
     """
     fastest_laps_df = query_snowflake(fastest_laps_query)
@@ -164,11 +164,11 @@ with tab3:
     SELECT
         d.team_name,
         COUNT(*) as total_laps,
-        AVG(l.lap_duration_seconds) as avg_lap_time,
-        MIN(l.lap_duration_seconds) as best_lap
+        AVG(l.lap_duration) as avg_lap_time,
+        MIN(l.lap_duration) as best_lap
     FROM fct_lap_times l
     JOIN dim_drivers d ON l.driver_number = d.driver_number
-    WHERE l.lap_duration_seconds > 0
+    WHERE l.lap_duration > 0
     GROUP BY d.team_name
     ORDER BY avg_lap_time
     """
