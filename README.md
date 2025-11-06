@@ -136,7 +136,7 @@ ApexML is a comprehensive data engineering and machine learning platform that:
 
 Managed with **uv** package manager
 
-**Total packages installed: 77**
+**Total packages installed: 78**
 
 <details>
 <summary>View all packages</summary>
@@ -175,6 +175,7 @@ isodate                        0.6.1
 jaraco-classes                 3.4.0
 jaraco-context                 6.0.1
 jaraco-functools               4.3.0
+jeepney                        0.9.0
 jinja2                         3.1.6
 jmespath                       1.0.1
 jsonschema                     4.25.1
@@ -206,6 +207,7 @@ referencing                    0.37.0
 requests                       2.32.5
 rpds-py                        0.28.0
 s3transfer                     0.14.0
+secretstorage                  3.4.0
 six                            1.17.0
 sniffio                        1.3.1
 snowflake-connector-python     3.18.0
@@ -213,7 +215,6 @@ snowplow-tracker               1.1.0
 sortedcontainers               2.4.0
 sqlparse                       0.5.3
 text-unidecode                 1.3
-tomli                          2.3.0
 tomlkit                        0.13.3
 typing-extensions              4.15.0
 typing-inspection              0.4.2
