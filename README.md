@@ -112,7 +112,7 @@ Managed with **uv** package manager (see [pyproject.toml](pyproject.toml))
 
 ### Direct Dependencies
 
-```toml
+```
 dbt-core>=1.10.13
 dbt-snowflake>=1.10.2
 httpx>=0.28.1

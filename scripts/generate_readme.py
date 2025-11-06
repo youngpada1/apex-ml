@@ -165,7 +165,7 @@ Managed with **uv** package manager (see [pyproject.toml](pyproject.toml))
 
 ### Direct Dependencies
 
-```toml
+```
 {chr(10).join(direct_deps)}
 ```
 
