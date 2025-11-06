@@ -136,12 +136,92 @@ ApexML is a comprehensive data engineering and machine learning platform that:
 
 Managed with **uv** package manager
 
-**Production:**
-- dbt-core>=1.10.13
-- dbt-snowflake>=1.10.2
-- httpx>=0.28.1
-- snowflake-connector-python>=3.18.0
+**Total packages installed: 77**
 
+<details>
+<summary>View all packages</summary>
+
+```
+agate                          1.9.1
+annotated-types                0.7.0
+anyio                          4.11.0
+asn1crypto                     1.5.1
+attrs                          25.4.0
+babel                          2.17.0
+boto3                          1.40.66
+botocore                       1.40.66
+certifi                        2025.1.31
+cffi                           1.17.1
+charset-normalizer             3.4.4
+click                          8.3.0
+colorama                       0.4.6
+cryptography                   45.0.7
+daff                           1.4.2
+dbt-adapters                   1.18.0
+dbt-common                     1.35.0
+dbt-core                       1.10.13
+dbt-extractor                  0.6.0
+dbt-protos                     1.0.382
+dbt-semantic-interfaces        0.9.0
+dbt-snowflake                  1.10.2
+deepdiff                       8.6.1
+filelock                       3.20.0
+h11                            0.16.0
+httpcore                       1.0.9
+httpx                          0.28.1
+idna                           3.11
+importlib-metadata             8.7.0
+isodate                        0.6.1
+jaraco-classes                 3.4.0
+jaraco-context                 6.0.1
+jaraco-functools               4.3.0
+jinja2                         3.1.6
+jmespath                       1.0.1
+jsonschema                     4.25.1
+jsonschema-specifications      2025.9.1
+keyring                        25.6.0
+leather                        0.4.0
+markupsafe                     3.0.3
+mashumaro                      3.14
+more-itertools                 10.8.0
+msgpack                        1.1.2
+networkx                       3.5
+orderly-set                    5.5.0
+packaging                      25.0
+parsedatetime                  2.6
+pathspec                       0.12.1
+platformdirs                   4.5.0
+protobuf                       6.33.0
+pycparser                      2.23
+pydantic                       2.12.4
+pydantic-core                  2.41.5
+pyjwt                          2.10.1
+pyopenssl                      25.3.0
+python-dateutil                2.9.0.post0
+python-slugify                 8.0.4
+pytimeparse                    1.1.8
+pytz                           2025.2
+pyyaml                         6.0.3
+referencing                    0.37.0
+requests                       2.32.5
+rpds-py                        0.28.0
+s3transfer                     0.14.0
+six                            1.17.0
+sniffio                        1.3.1
+snowflake-connector-python     3.18.0
+snowplow-tracker               1.1.0
+sortedcontainers               2.4.0
+sqlparse                       0.5.3
+text-unidecode                 1.3
+tomli                          2.3.0
+tomlkit                        0.13.3
+typing-extensions              4.15.0
+typing-inspection              0.4.2
+urllib3                        2.5.0
+zipp                           3.23.0
+```
+
+</details>
 
 ---
 

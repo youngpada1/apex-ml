@@ -1,6 +1,11 @@
 import os
-import tomllib
+import subprocess
 from pathlib import Path
+
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
 
 def extract_docstring(file_path: str) -> str:
     """Extract the first module-level docstring from a Python file."""
@@ -169,38 +174,61 @@ def generate_readme():
             readme.append(doc)
             readme.append("")
 
-    # Add dependencies section
-    pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    # Add dependencies section - show ALL installed packages
     readme.append("## 📦 Dependencies")
     readme.append("")
     readme.append("Managed with **uv** package manager")
     readme.append("")
 
-    if pyproject_path.exists():
-        try:
-            with open(pyproject_path, "rb") as f:
-                pyproject = tomllib.load(f)
+    try:
+        # Get all installed packages from uv pip list
+        result = subprocess.run(
+            ["uv", "pip", "list", "--format=columns"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
 
-            deps = pyproject.get("project", {}).get("dependencies", [])
-            dev_deps = pyproject.get("tool", {}).get("uv", {}).get("dev-dependencies", [])
+        if result.stdout:
+            lines = result.stdout.strip().split("\n")
+            # Skip header lines
+            package_lines = [line for line in lines[2:] if line.strip()]
 
-            if deps:
-                readme.append("**Production:**")
-                for dep in deps:
-                    readme.append(f"- {dep}")
+            if package_lines:
+                readme.append(f"**Total packages installed: {len(package_lines)}**")
                 readme.append("")
+                readme.append("<details>")
+                readme.append("<summary>View all packages</summary>")
+                readme.append("")
+                readme.append("```")
+                for line in package_lines:
+                    parts = line.split()
+                    if len(parts) >= 2:
+                        readme.append(f"{parts[0]:<30} {parts[1]}")
+                readme.append("```")
+                readme.append("")
+                readme.append("</details>")
+            else:
+                readme.append("_No packages found._")
+        else:
+            readme.append("_Could not retrieve package list._")
+    except Exception as e:
+        readme.append(f"_Error retrieving packages: {e}_")
+        readme.append("")
+        readme.append("**Note:** Using pyproject.toml as fallback")
 
-            if dev_deps:
-                readme.append("**Development:**")
-                for dep in dev_deps:
-                    readme.append(f"- {dep}")
-
-            if not deps and not dev_deps:
-                readme.append("_Dependencies managed via pyproject.toml_")
-        except Exception as e:
-            readme.append(f"_Error reading pyproject.toml: {e}_")
-    else:
-        readme.append("_No pyproject.toml file found._")
+        # Fallback to pyproject.toml
+        pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+        if pyproject_path.exists():
+            try:
+                with open(pyproject_path, "rb") as f:
+                    pyproject = tomllib.load(f)
+                deps = pyproject.get("project", {}).get("dependencies", [])
+                if deps:
+                    for dep in deps:
+                        readme.append(f"- {dep}")
+            except Exception:
+                pass
 
     readme.append("")
     readme.append("---")
