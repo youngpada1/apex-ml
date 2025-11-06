@@ -76,6 +76,7 @@ venv.bak/
 
 # Logs
 *.log
+logs/
 
 # Docker
 docker-compose.override.yml
