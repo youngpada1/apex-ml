@@ -1,0 +1,41 @@
+apex_ml:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      private_key_path: "/Users/youngpadawan/.ssh/snowflake_key.p8"
+      role: DATA_ENGINEER
+      database: APEXML_DEV
+      warehouse: ETL_WH_DEV
+      schema: RAW
+      threads: 4
+      client_session_keep_alive: False
+      authenticator: SNOWFLAKE_JWT
+
+    staging:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      private_key_path: "/Users/youngpadawan/.ssh/snowflake_key.p8"
+      role: DATA_ENGINEER
+      database: APEXML_STAGING
+      warehouse: ETL_WH_STAGING
+      schema: RAW
+      threads: 4
+      client_session_keep_alive: False
+      authenticator: SNOWFLAKE_JWT
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      private_key_path: "/Users/youngpadawan/.ssh/snowflake_key.p8"
+      role: DATA_ENGINEER
+      database: APEXML_PROD
+      warehouse: ETL_WH_PROD
+      schema: RAW
+      threads: 8
+      client_session_keep_alive: False
+      authenticator: SNOWFLAKE_JWT

@@ -15,7 +15,7 @@ resource "snowflake_grant_account_role" "ml_engineer_to_data_engineer" {
 
 resource "snowflake_grant_privileges_to_account_role" "database_usage_data_engineer" {
   account_role_name = snowflake_role.data_engineer.name
-  privileges        = ["USAGE"]
+  privileges        = ["USAGE", "CREATE SCHEMA"]
   on_account_object {
     object_type = "DATABASE"
     object_name = snowflake_database.apexml.name

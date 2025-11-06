@@ -7,13 +7,30 @@ from snowflake.connector import DictCursor
 
 
 def get_snowflake_connection():
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import serialization
+
+    # Read and parse the private key
+    with open(os.path.expanduser("~/.ssh/snowflake_key.p8"), "rb") as key_file:
+        private_key = serialization.load_pem_private_key(
+            key_file.read(),
+            password=None,
+            backend=default_backend()
+        )
+
+    pkb = private_key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+
     return snowflake.connector.connect(
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
         user=os.getenv("SNOWFLAKE_USER"),
-        private_key_path=os.path.expanduser("~/.ssh/snowflake_key.p8"),
+        private_key=pkb,
         database=os.getenv("SNOWFLAKE_DATABASE", "APEXML_DEV"),
         schema=os.getenv("SNOWFLAKE_SCHEMA", "RAW"),
-        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE", "ETL_WAREHOUSE"),
+        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE", "ETL_WH_DEV"),
         role=os.getenv("SNOWFLAKE_ROLE", "DATA_ENGINEER"),
     )
 
@@ -26,13 +43,11 @@ def load_sessions(conn, sessions: list[dict[str, Any]]) -> int:
         cursor.execute(
             """
             INSERT INTO sessions (
-                session_key, session_name, date_start, date_end, gmt_offset,
-                session_type, meeting_key, location, country_key, country_code,
-                country_name, circuit_key, circuit_short_name, year, ingested_at
+                session_key, session_name, session_type, date_start, date_end,
+                gmt_offset, location, country_name, circuit_short_name, year, ingested_at
             ) VALUES (
-                %(session_key)s, %(session_name)s, %(date_start)s, %(date_end)s,
-                %(gmt_offset)s, %(session_type)s, %(meeting_key)s, %(location)s,
-                %(country_key)s, %(country_code)s, %(country_name)s, %(circuit_key)s,
+                %(session_key)s, %(session_name)s, %(session_type)s, %(date_start)s,
+                %(date_end)s, %(gmt_offset)s, %(location)s, %(country_name)s,
                 %(circuit_short_name)s, %(year)s, %(ingested_at)s
             )
             """,
@@ -53,13 +68,12 @@ def load_drivers(conn, drivers: list[dict[str, Any]]) -> int:
         cursor.execute(
             """
             INSERT INTO drivers (
-                session_key, driver_number, broadcast_name, full_name, name_acronym,
-                team_name, team_colour, first_name, last_name, headshot_url,
-                country_code, ingested_at
+                driver_number, session_key, broadcast_name, full_name, name_acronym,
+                team_name, team_colour, headshot_url, country_code, ingested_at
             ) VALUES (
-                %(session_key)s, %(driver_number)s, %(broadcast_name)s, %(full_name)s,
-                %(name_acronym)s, %(team_name)s, %(team_colour)s, %(first_name)s,
-                %(last_name)s, %(headshot_url)s, %(country_code)s, %(ingested_at)s
+                %(driver_number)s, %(session_key)s, %(broadcast_name)s, %(full_name)s,
+                %(name_acronym)s, %(team_name)s, %(team_colour)s, %(headshot_url)s,
+                %(country_code)s, %(ingested_at)s
             )
             """,
             driver,
@@ -84,7 +98,7 @@ def load_laps(conn, laps: list[dict[str, Any]]) -> int:
                 is_pit_out_lap, date_start, ingested_at
             ) VALUES (
                 %(session_key)s, %(driver_number)s, %(lap_number)s, %(lap_duration)s,
-                %(segments_sector_1)s, %(segments_sector_2)s, %(segments_sector_3)s,
+                %(duration_sector_1)s, %(duration_sector_2)s, %(duration_sector_3)s,
                 %(is_pit_out_lap)s, %(date_start)s, %(ingested_at)s
             )
             """,
@@ -93,9 +107,9 @@ def load_laps(conn, laps: list[dict[str, Any]]) -> int:
                 "driver_number": lap.get("driver_number"),
                 "lap_number": lap.get("lap_number"),
                 "lap_duration": lap.get("lap_duration"),
-                "segments_sector_1": lap.get("segments_sector_1"),
-                "segments_sector_2": lap.get("segments_sector_2"),
-                "segments_sector_3": lap.get("segments_sector_3"),
+                "duration_sector_1": lap.get("duration_sector_1"),
+                "duration_sector_2": lap.get("duration_sector_2"),
+                "duration_sector_3": lap.get("duration_sector_3"),
                 "is_pit_out_lap": lap.get("is_pit_out_lap"),
                 "date_start": lap.get("date_start"),
                 "ingested_at": lap.get("ingested_at"),
@@ -116,16 +130,16 @@ def load_positions(conn, positions: list[dict[str, Any]]) -> int:
         cursor.execute(
             """
             INSERT INTO positions (
-                session_key, driver_number, position, position_timestamp, ingested_at
+                session_key, driver_number, date, position, ingested_at
             ) VALUES (
-                %(session_key)s, %(driver_number)s, %(position)s, %(date)s, %(ingested_at)s
+                %(session_key)s, %(driver_number)s, %(date)s, %(position)s, %(ingested_at)s
             )
             """,
             {
                 "session_key": position.get("session_key"),
                 "driver_number": position.get("driver_number"),
-                "position": position.get("position"),
                 "date": position.get("date"),
+                "position": position.get("position"),
                 "ingested_at": position.get("ingested_at"),
             },
         )
@@ -140,6 +154,12 @@ def load_all(data: dict[str, list[dict[str, Any]]]):
     conn = get_snowflake_connection()
 
     try:
+        # Ensure warehouse is active
+        cursor = conn.cursor()
+        warehouse = os.getenv("SNOWFLAKE_WAREHOUSE", "ETL_WH_DEV")
+        cursor.execute(f"ALTER WAREHOUSE {warehouse} RESUME IF SUSPENDED")
+        cursor.close()
+
         sessions_count = load_sessions(conn, data["sessions"])
         print(f"Loaded {sessions_count} sessions")
 

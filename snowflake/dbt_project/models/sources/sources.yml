@@ -1,0 +1,93 @@
+version: 2
+
+sources:
+  - name: raw
+    database: APEXML_DEV
+    schema: RAW
+    description: "Raw F1 data from OpenF1 API"
+
+    tables:
+      - name: sessions
+        description: "F1 session metadata"
+        columns:
+          - name: session_key
+            description: "Unique session identifier"
+            tests:
+              - not_null
+              - unique
+          - name: session_name
+            description: "Session name (e.g., 'Race', 'Qualifying')"
+          - name: session_type
+            description: "Type of session"
+          - name: year
+            description: "Season year"
+            tests:
+              - not_null
+          - name: ingested_at
+            description: "ETL ingestion timestamp"
+            tests:
+              - not_null
+
+      - name: drivers
+        description: "F1 driver information"
+        columns:
+          - name: driver_number
+            description: "Driver racing number"
+            tests:
+              - not_null
+          - name: session_key
+            description: "Session identifier"
+            tests:
+              - not_null
+          - name: full_name
+            description: "Driver full name"
+          - name: team_name
+            description: "Team name"
+          - name: ingested_at
+            description: "ETL ingestion timestamp"
+            tests:
+              - not_null
+
+      - name: laps
+        description: "Lap times and sector data"
+        columns:
+          - name: session_key
+            description: "Session identifier"
+            tests:
+              - not_null
+          - name: driver_number
+            description: "Driver number"
+            tests:
+              - not_null
+          - name: lap_number
+            description: "Lap number"
+            tests:
+              - not_null
+          - name: lap_duration
+            description: "Total lap time in seconds"
+          - name: ingested_at
+            description: "ETL ingestion timestamp"
+            tests:
+              - not_null
+
+      - name: positions
+        description: "Driver positions throughout the race"
+        columns:
+          - name: session_key
+            description: "Session identifier"
+            tests:
+              - not_null
+          - name: driver_number
+            description: "Driver number"
+            tests:
+              - not_null
+          - name: position
+            description: "Track position"
+            tests:
+              - not_null
+          - name: date
+            description: "Timestamp of position"
+          - name: ingested_at
+            description: "ETL ingestion timestamp"
+            tests:
+              - not_null

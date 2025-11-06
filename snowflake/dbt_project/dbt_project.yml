@@ -1,8 +1,8 @@
-name: 'apexml'
+name: 'apex_ml'
 version: '1.0.0'
 config-version: 2
 
-profile: 'apexml'
+profile: 'apex_ml'
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
@@ -16,7 +16,7 @@ clean-targets:
   - "dbt_packages"
 
 models:
-  apexml:
+  apex_ml:
     staging:
       +materialized: view
       +schema: staging
