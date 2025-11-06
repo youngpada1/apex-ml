@@ -1,24 +1,4 @@
-terraform {
-  required_providers {
-    snowflake = {
-      source  = "Snowflake-Labs/snowflake"
-      version = "~> 0.94"
-    }
-  }
-}
-
-provider "snowflake" {
-  # Key pair authentication (industry best practice)
-  # Uses environment variables for security:
-  # - SNOWFLAKE_ACCOUNT: Your Snowflake account identifier
-  # - SNOWFLAKE_USER: Your Snowflake username
-  # - SNOWFLAKE_PRIVATE_KEY_PATH: Path to your private key file
-
-  role                = "ACCOUNTADMIN"
-  authenticator       = "JWT"
-  private_key_path    = pathexpand("~/.ssh/snowflake_key.p8")
-  warehouse           = "COMPUTE_WH"
-}
+# Provider configured at root module level (/infra/main.tf)
 
 # --- RBAC: Custom Roles ---
 
