@@ -17,6 +17,7 @@ provider "snowflake" {
   role                = "ACCOUNTADMIN"
   authenticator       = "JWT"
   private_key_path    = pathexpand("~/.ssh/snowflake_key.p8")
+  warehouse           = "COMPUTE_WH"
 }
 
 # --- RBAC: Custom Roles ---

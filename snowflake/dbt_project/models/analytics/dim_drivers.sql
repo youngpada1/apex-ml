@@ -25,5 +25,5 @@ SELECT
     country_code,
     headshot_url,
     CURRENT_TIMESTAMP() AS updated_at
-FROM driver_data
+FROM drivers
 
