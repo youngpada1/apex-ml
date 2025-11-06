@@ -248,7 +248,7 @@ zipp                                     3.23.0
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone the repository
-git clone <your-repo-url>
+git clone <https://github.com/youngpada1/apex-ml>
 cd apex-ml
 
 # Install dependencies
