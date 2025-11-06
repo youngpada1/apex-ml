@@ -132,12 +132,6 @@ ApexML is a comprehensive data engineering and machine learning platform that:
 
 ---
 
-## 📁 Python Modules
-
-### `main.py`
-
-No module docstring found.
-
 ## 📦 Dependencies
 
 Managed with **uv** package manager
