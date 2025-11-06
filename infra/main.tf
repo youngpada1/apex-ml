@@ -5,3 +5,10 @@ terraform {
     # Path will be: terraform.tfstate.d/<workspace>/terraform.tfstate
   }
 }
+
+# Snowflake Infrastructure Module
+module "snowflake" {
+  source = "./snowflake"
+
+  environment = var.environment
+}
