@@ -37,11 +37,9 @@ jobs:
           terraform_version: "1.6.0"
 
       - name: Set up Snowflake private key
-        env:
-          SNOWFLAKE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SNOWFLAKE_KEY" > ~/.ssh/snowflake_key.p8
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ~/.ssh/snowflake_key.p8
           chmod 600 ~/.ssh/snowflake_key.p8
 
       - name: Determine environment
