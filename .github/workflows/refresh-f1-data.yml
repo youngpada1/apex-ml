@@ -2,9 +2,12 @@ name: Refresh F1 Race Data
 
 on:
   schedule:
-    # Run every 6 hours on race weekends (Fri-Sun)
-    - cron: '0 */6 * * 5-0'
+    # Run every hour on race weekends (Fri-Sun) for live ML training
+    - cron: '0 */6 * * 5,6,0'
   workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: read
 
 jobs:
   refresh-data:
@@ -40,7 +43,7 @@ jobs:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_DATABASE: APEXML_DEV
-          SNOWFLAKE_SCHEMA: RAW
+          SNOWFLAKE_SCHEMA: DEV
           SNOWFLAKE_WAREHOUSE: ETL_WH_DEV
           SNOWFLAKE_ROLE: DATA_ENGINEER
         run: |

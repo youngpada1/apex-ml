@@ -6,7 +6,7 @@ import asyncio
 import sys
 import subprocess
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from extract import extract_session_data
 from load import load_all
 import httpx
@@ -24,7 +24,7 @@ async def get_latest_race_session():
         sessions = response.json()
 
         # Filter for completed sessions (ended in the past)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         completed_sessions = [
             s for s in sessions
             if s.get('date_end') and datetime.fromisoformat(s['date_end'].replace('Z', '+00:00')) < now
@@ -52,7 +52,7 @@ async def refresh_pipeline():
     """
     print("="*80)
     print("F1 DATA REFRESH PIPELINE")
-    print(f"Started at: {datetime.utcnow().isoformat()}")
+    print(f"Started at: {datetime.now(timezone.utc).isoformat()}")
     print("="*80)
 
     # Step 1: Get latest race session
@@ -108,7 +108,7 @@ async def refresh_pipeline():
 
     print("\n" + "="*80)
     print("PIPELINE COMPLETED SUCCESSFULLY")
-    print(f"Finished at: {datetime.utcnow().isoformat()}")
+    print(f"Finished at: {datetime.now(timezone.utc).isoformat()}")
     print("="*80)
 
 
