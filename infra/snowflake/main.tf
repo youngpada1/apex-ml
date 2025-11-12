@@ -22,17 +22,17 @@ provider "snowflake" {
 
 # --- RBAC: Custom Roles ---
 
-resource "snowflake_role" "data_engineer" {
+resource "snowflake_account_role" "data_engineer" {
   name    = "DATA_ENGINEER"
   comment = "Role for data engineers with full access to ETL operations"
 }
 
-resource "snowflake_role" "analytics_user" {
+resource "snowflake_account_role" "analytics_user" {
   name    = "ANALYTICS_USER"
   comment = "Role for analytics users with read-only access"
 }
 
-resource "snowflake_role" "ml_engineer" {
+resource "snowflake_account_role" "ml_engineer" {
   name    = "ML_ENGINEER"
   comment = "Role for ML engineers with access to analytics schema"
 }
