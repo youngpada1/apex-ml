@@ -47,8 +47,8 @@ async def refresh_pipeline():
     """
     Run the full data refresh pipeline:
     1. Extract latest race data from OpenF1 API
-    2. Load into Snowflake RAW tables
-    3. Run dbt transformations to update STAGING and ANALYTICS
+    2. Load into Snowflake DEV schema (raw tables)
+    3. Run dbt transformations to update STAGING and PROD schemas
     """
     print("="*80)
     print("F1 DATA REFRESH PIPELINE")
@@ -81,7 +81,7 @@ async def refresh_pipeline():
         sys.exit(1)
 
     # Step 3: Run dbt transformations
-    print("\n[3/3] Running dbt transformations (STAGING → ANALYTICS)...")
+    print("\n[3/3] Running dbt transformations (STAGING → PROD)...")
     try:
         # Get project root
         project_root = Path(__file__).parent.parent.parent

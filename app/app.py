@@ -9,21 +9,19 @@ st.set_page_config(page_title="ApexML – F1 Analytics", layout="wide")
 # Snowflake connection
 @st.cache_resource
 def get_snowflake_connection():
-    # Use environment variables to determine which database/schema to query
-    # DEV: APEXML_DEV.ANALYTICS (for testing)
-    # STAGING: APEXML_STAGING.ANALYTICS (for validation)
-    # PROD: APEXML_PROD.ANALYTICS (for production dashboard)
-    database = os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV')
-    schema = os.getenv('SNOWFLAKE_SCHEMA', 'ANALYTICS')
+    # Environment-specific configuration via environment variables:
+    # DEV: APEXML_DEV.PROD (analytics tables for local testing)
+    # STAGING: APEXML_STAGING.PROD (validation environment)
+    # PROD: APEXML_PROD.PROD (production dashboard)
 
     return snowflake.connector.connect(
         user=os.getenv('SNOWFLAKE_USER'),
         account=os.getenv('SNOWFLAKE_ACCOUNT'),
         authenticator='SNOWFLAKE_JWT',
         private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
-        warehouse='COMPUTE_WH',
-        database=database,
-        schema=schema
+        warehouse=os.getenv('SNOWFLAKE_WAREHOUSE'),
+        database=os.getenv('SNOWFLAKE_DATABASE'),
+        schema=os.getenv('SNOWFLAKE_SCHEMA')
     )
 
 @st.cache_data(ttl=300)
@@ -184,5 +182,5 @@ with tab3:
     st.dataframe(team_comparison_df, use_container_width=True)
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("**Data Source:** Snowflake ANALYTICS schema")
+st.sidebar.markdown(f"**Data Source:** {os.getenv('SNOWFLAKE_DATABASE')}.{os.getenv('SNOWFLAKE_SCHEMA')}")
 st.sidebar.markdown("**Updated:** Real-time via dbt transformations")
