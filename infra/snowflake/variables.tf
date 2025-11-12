@@ -17,5 +17,5 @@ variable "snowflake_account" {
 
 variable "snowflake_user" {
   description = "Snowflake username used for JTV authentication"
-  type.       = string
+  type        = string
 }
