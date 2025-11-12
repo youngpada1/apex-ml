@@ -1,0 +1,52 @@
+name: Refresh F1 Race Data
+
+on:
+  schedule:
+    # Run every 6 hours on race weekends (Fri-Sun)
+    - cron: '0 */6 * * 5-0'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  refresh-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          cd snowflake/elt
+          uv sync
+
+      - name: Set up Snowflake private key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ~/.ssh/snowflake_key.p8
+          chmod 600 ~/.ssh/snowflake_key.p8
+
+      - name: Run data refresh pipeline
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_DATABASE: APEXML_DEV
+          SNOWFLAKE_SCHEMA: RAW
+          SNOWFLAKE_WAREHOUSE: ETL_WH_DEV
+          SNOWFLAKE_ROLE: DATA_ENGINEER
+        run: |
+          cd snowflake/elt
+          uv run python refresh_latest.py
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Data refresh failed! Check logs."
