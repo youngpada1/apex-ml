@@ -49,7 +49,7 @@ resource "snowflake_user" "etl_service_account" {
   login_name   = "etl_service_account"
   comment      = "Service account for automated ETL pipelines"
   password     = var.etl_service_account_password
-  default_role = snowflake_role.data_engineer.name
+  default_role = snowflake_account_role.data_engineer.name
 
   default_warehouse    = snowflake_warehouse.etl_warehouse.name
   must_change_password = false

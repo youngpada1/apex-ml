@@ -13,7 +13,7 @@ output "schemas" {
 }
 
 output "data_engineer_role" {
-  value       = snowflake_role.data_engineer.name
+  value       = snowflake_account_role.data_engineer.name
   description = "Data engineer role name"
 }
 
