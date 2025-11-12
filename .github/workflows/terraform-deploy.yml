@@ -42,6 +42,13 @@ jobs:
           printf '%s/n' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ~/.ssh/snowflake_key.p8
           chmod 600 ~/.ssh/snowflake_key.p8
 
+      - name : Verify key + DNS 
+        run: |
+          grep --q "BEGING PRIVATE KEY" ~/.ssh/snowflake_key.p8 || (echo "No PEM header && exit 1")
+          echo "Resolving Swnoflake host..."
+          nslookup ${{ secrets.SNOWFLAKE_ACCOUNT }}.snowflakecomputing.com || (echo "Bad Snowflake_account value && exit 1")
+          
+
       - name: Determine environment
         id: env
         run: |
@@ -54,11 +61,14 @@ jobs:
           fi
 
       - name: Terraform Init
+        timeout-minutes: 5
         working-directory: infra/snowflake
         env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          TF_VAR_SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          TF_VAR_SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
+          TF_LOG: DEBUG
+          TF_LOG_PATH: teraform_init.log        
         run: terraform init
 
       - name: Select Terraform Workspace
@@ -69,8 +79,8 @@ jobs:
       - name: Terraform Plan
         working-directory: infra/snowflake
         env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          TF_SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          TF_SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: |
           terraform plan -var="environment=${{ steps.env.outputs.environment }}" -out=tfplan
@@ -78,8 +88,8 @@ jobs:
       - name: Terraform Apply
         working-directory: infra/snowflake
         env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          TF_SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          TF_SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: terraform apply -auto-approve tfplan
 
