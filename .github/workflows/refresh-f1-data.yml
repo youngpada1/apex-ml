@@ -2,8 +2,8 @@ name: Refresh F1 Race Data
 
 on:
   schedule:
-    # Run every 6 hours on race weekends (Fri-Sun)
-    - cron: '0 */6 * * 5-7'
+    # Run every hour on race weekends (Fri-Sun) for live ML training
+    - cron: '0 * * * 5,6,0'
   workflow_dispatch:  # Allow manual triggering
 
 permissions:
