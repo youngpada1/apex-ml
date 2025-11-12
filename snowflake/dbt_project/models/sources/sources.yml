@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    database: APEXML_DEV
+    database: "{{ target.database }}"
     schema: RAW
     description: "Raw F1 data from OpenF1 API"
 
