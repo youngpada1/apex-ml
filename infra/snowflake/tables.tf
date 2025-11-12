@@ -2,7 +2,7 @@
 
 resource "snowflake_table" "raw_sessions" {
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.raw.name
+  schema   = snowflake_schema.dev.name
   name     = "SESSIONS"
   comment  = "Raw F1 session data from OpenF1 API"
 
@@ -67,7 +67,7 @@ resource "snowflake_table" "raw_sessions" {
 
 resource "snowflake_table" "raw_drivers" {
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.raw.name
+  schema   = snowflake_schema.dev.name
   name     = "DRIVERS"
   comment  = "Raw F1 driver data from OpenF1 API"
 
@@ -124,7 +124,7 @@ resource "snowflake_table" "raw_drivers" {
 
 resource "snowflake_table" "raw_positions" {
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.raw.name
+  schema   = snowflake_schema.dev.name
   name     = "POSITIONS"
   comment  = "Raw lap-by-lap position data from OpenF1 API"
 
@@ -156,7 +156,7 @@ resource "snowflake_table" "raw_positions" {
 
 resource "snowflake_table" "raw_laps" {
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.raw.name
+  schema   = snowflake_schema.dev.name
   name     = "LAPS"
   comment  = "Raw lap times and telemetry from OpenF1 API"
 

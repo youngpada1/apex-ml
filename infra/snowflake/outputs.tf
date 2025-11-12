@@ -5,9 +5,9 @@ output "database_name" {
 
 output "schemas" {
   value = {
-    raw       = snowflake_schema.raw.name
+    raw       = snowflake_schema.dev.name
     staging   = snowflake_schema.staging.name
-    analytics = snowflake_schema.analytics.name
+    analytics = snowflake_schema.prod.name
   }
   description = "Snowflake schema names"
 }
