@@ -8,14 +8,14 @@ locals {
 }
 
 # --- Promote data from DEV to STAGING ---
-# Creates dynamic tables that automatically sync data from DEV.RAW to STAGING.RAW
+# Creates dynamic tables that automatically sync data from DEV.DEV to STAGING.DEV
 
 resource "snowflake_dynamic_table" "staging_sessions" {
   count = local.should_promote_from_dev ? 1 : 0
 
   name     = "SESSIONS"
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.raw.name
+  schema   = snowflake_schema.dev.name
 
   target_lag {
     maximum_duration = "1 hour"
@@ -24,7 +24,7 @@ resource "snowflake_dynamic_table" "staging_sessions" {
   warehouse = snowflake_warehouse.etl_warehouse.name
 
   query = <<-SQL
-    SELECT * FROM APEXML_DEV.RAW.SESSIONS
+    SELECT * FROM APEXML_DEV.DEV.SESSIONS
   SQL
 
   comment = "Dynamic table syncing sessions data from DEV"
@@ -35,7 +35,7 @@ resource "snowflake_dynamic_table" "staging_drivers" {
 
   name     = "DRIVERS"
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.raw.name
+  schema   = snowflake_schema.dev.name
 
   target_lag {
     maximum_duration = "1 hour"
@@ -44,7 +44,7 @@ resource "snowflake_dynamic_table" "staging_drivers" {
   warehouse = snowflake_warehouse.etl_warehouse.name
 
   query = <<-SQL
-    SELECT * FROM APEXML_DEV.RAW.DRIVERS
+    SELECT * FROM APEXML_DEV.DEV.DRIVERS
   SQL
 
   comment = "Dynamic table syncing drivers data from DEV"
@@ -55,7 +55,7 @@ resource "snowflake_dynamic_table" "staging_laps" {
 
   name     = "LAPS"
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.raw.name
+  schema   = snowflake_schema.dev.name
 
   target_lag {
     maximum_duration = "1 hour"
@@ -64,7 +64,7 @@ resource "snowflake_dynamic_table" "staging_laps" {
   warehouse = snowflake_warehouse.etl_warehouse.name
 
   query = <<-SQL
-    SELECT * FROM APEXML_DEV.RAW.LAPS
+    SELECT * FROM APEXML_DEV.DEV.LAPS
   SQL
 
   comment = "Dynamic table syncing laps data from DEV"
@@ -75,7 +75,7 @@ resource "snowflake_dynamic_table" "staging_positions" {
 
   name     = "POSITIONS"
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.raw.name
+  schema   = snowflake_schema.dev.name
 
   target_lag {
     maximum_duration = "1 hour"
@@ -84,7 +84,7 @@ resource "snowflake_dynamic_table" "staging_positions" {
   warehouse = snowflake_warehouse.etl_warehouse.name
 
   query = <<-SQL
-    SELECT * FROM APEXML_DEV.RAW.POSITIONS
+    SELECT * FROM APEXML_DEV.DEV.POSITIONS
   SQL
 
   comment = "Dynamic table syncing positions data from DEV"
