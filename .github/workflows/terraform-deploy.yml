@@ -64,11 +64,11 @@ jobs:
         timeout-minutes: 5
         working-directory: infra/snowflake
         env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
-          LOG: DEBUG
-          LOG_PATH: teraform_init.log        
+          TF_VAR_SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          TF_VAR_SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
+          TF_VAR_LOG: DEBUG
+          TF_VAR_LOG_PATH: teraform_init.log        
         run: terraform init
 
       - name: Select Terraform Workspace
@@ -79,18 +79,18 @@ jobs:
       - name: Terraform Plan
         working-directory: infra/snowflake
         env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
+          TF_VAR_SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          TF_VAR_SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: |
           terraform plan -var="environment=${{ steps.env.outputs.environment }}" -out=tfplan
 
       - name: Terraform Apply
         working-directory: infra/snowflake
         env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
+          TF_VAR_SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          TF_VAR_NOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: terraform apply -auto-approve tfplan
 
       - name: Notify on failure
