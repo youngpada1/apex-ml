@@ -9,15 +9,15 @@ terraform {
 
 provider "snowflake" {
   # Key pair authentication (industry best practice)
-  # Uses environment variables for security:
-  # - SNOWFLAKE_ACCOUNT: Your Snowflake account identifier
-  # - SNOWFLAKE_USER: Your Snowflake username
-  # The provider automatically reads these from environment variables
+  # The Snowflake provider automatically reads these from environment variables:
+  # - SNOWFLAKE_ACCOUNT
+  # - SNOWFLAKE_USER
+  # No need to explicitly specify them here
 
-  role                = "ACCOUNTADMIN"
-  authenticator       = "JWT"
-  private_key         = file(pathexpand("~/.ssh/snowflake_key.p8"))
-  warehouse           = "COMPUTE_WH"
+  role              = "ACCOUNTADMIN"
+  authenticator     = "JWT"
+  private_key       = file(pathexpand("~/.ssh/snowflake_key.p8"))
+  warehouse         = "COMPUTE_WH"
 }
 
 # --- RBAC: Custom Roles ---
