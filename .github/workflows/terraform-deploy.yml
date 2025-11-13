@@ -44,6 +44,9 @@ jobs:
 
       - name: Verify key format
         run: |
+          echo "Key file exists: $(ls -lh ~/.ssh/snowflake_key.p8)"
+          echo "First line: $(head -n 1 ~/.ssh/snowflake_key.p8)"
+          echo "Last line: $(tail -n 1 ~/.ssh/snowflake_key.p8)"
           if ! grep -q "BEGIN PRIVATE KEY" ~/.ssh/snowflake_key.p8; then
             echo "Error: Private key missing PEM header"
             exit 1
