@@ -12,10 +12,8 @@ provider "snowflake" {
   # Uses environment variables for security:
   # - SNOWFLAKE_ACCOUNT: Your Snowflake account identifier
   # - SNOWFLAKE_USER: Your Snowflake username
-  # - SNOWFLAKE_PRIVATE_KEY: The private key content (preferred in CI/CD)
-  
-  account             = var.snowflake_account
-  user                = var.snowflake_user
+  # The provider automatically reads these from environment variables
+
   role                = "ACCOUNTADMIN"
   authenticator       = "JWT"
   private_key         = file(pathexpand("~/.ssh/snowflake_key.p8"))
