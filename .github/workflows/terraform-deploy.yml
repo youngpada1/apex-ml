@@ -84,6 +84,22 @@ jobs:
         run: |
           terraform workspace select ${{ steps.env.outputs.environment }} || terraform workspace new ${{ steps.env.outputs.environment }}
 
+      - name: Migrate schema state (one-time fix for schema rename)
+        working-directory: infra/snowflake
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+        run: |
+          # Check if old schema resources exist in state and rename them
+          if terraform state list | grep -q "snowflake_schema.dev"; then
+            echo "Migrating snowflake_schema.dev to snowflake_schema.raw"
+            terraform state mv snowflake_schema.dev snowflake_schema.raw
+          fi
+          if terraform state list | grep -q "snowflake_schema.prod"; then
+            echo "Migrating snowflake_schema.prod to snowflake_schema.analytics"
+            terraform state mv snowflake_schema.prod snowflake_schema.analytics
+          fi
+
       - name: Terraform Plan
         working-directory: infra/snowflake
         env:
