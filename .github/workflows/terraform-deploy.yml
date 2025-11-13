@@ -39,7 +39,9 @@ jobs:
       - name: Set up Snowflake private key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ~/.ssh/snowflake_key.p8
+          cat > ~/.ssh/snowflake_key.p8 << 'EOF'
+          ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          EOF
           chmod 600 ~/.ssh/snowflake_key.p8
 
       - name: Verify key format
