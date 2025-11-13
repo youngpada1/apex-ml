@@ -9,7 +9,7 @@ apex_ml:
       role: DATA_ENGINEER
       database: APEXML_DEV
       warehouse: ETL_WH_DEV
-      schema: DEV
+      schema: RAW
       threads: 4
       client_session_keep_alive: False
       authenticator: SNOWFLAKE_JWT
@@ -22,7 +22,7 @@ apex_ml:
       role: DATA_ENGINEER
       database: APEXML_STAGING
       warehouse: ETL_WH_STAGING
-      schema: STAGING
+      schema: RAW
       threads: 4
       client_session_keep_alive: False
       authenticator: SNOWFLAKE_JWT
@@ -35,7 +35,7 @@ apex_ml:
       role: DATA_ENGINEER
       database: APEXML_PROD
       warehouse: ETL_WH_PROD
-      schema: PROD
+      schema: RAW
       threads: 8
       client_session_keep_alive: False
       authenticator: SNOWFLAKE_JWT

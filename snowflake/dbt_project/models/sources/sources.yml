@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: raw
     database: "{{ target.database }}"
-    schema: DEV
+    schema: RAW
     description: "Raw F1 data from OpenF1 API"
 
     tables:

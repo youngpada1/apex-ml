@@ -69,9 +69,9 @@ resource "snowflake_database" "apexml" {
 
 # --- Schemas ---
 
-resource "snowflake_schema" "dev" {
+resource "snowflake_schema" "raw" {
   database = snowflake_database.apexml.name
-  name     = "DEV"
+  name     = "RAW"
   comment  = "Raw data ingested from OpenF1 API"
 }
 
@@ -81,9 +81,9 @@ resource "snowflake_schema" "staging" {
   comment  = "Cleaned and transformed data"
 }
 
-resource "snowflake_schema" "prod" {
+resource "snowflake_schema" "analytics" {
   database = snowflake_database.apexml.name
-  name     = "PROD"
+  name     = "ANALYTICS"
   comment  = "Production-ready analytics data for ML and visualizations"
 }
 

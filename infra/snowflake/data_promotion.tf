@@ -15,7 +15,7 @@ resource "snowflake_dynamic_table" "staging_sessions" {
 
   name     = "SESSIONS"
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.dev.name
+  schema   = snowflake_schema.raw.name
 
   target_lag {
     maximum_duration = "1 hour"
@@ -35,7 +35,7 @@ resource "snowflake_dynamic_table" "staging_drivers" {
 
   name     = "DRIVERS"
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.dev.name
+  schema   = snowflake_schema.raw.name
 
   target_lag {
     maximum_duration = "1 hour"
@@ -55,7 +55,7 @@ resource "snowflake_dynamic_table" "staging_laps" {
 
   name     = "LAPS"
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.dev.name
+  schema   = snowflake_schema.raw.name
 
   target_lag {
     maximum_duration = "1 hour"
@@ -75,7 +75,7 @@ resource "snowflake_dynamic_table" "staging_positions" {
 
   name     = "POSITIONS"
   database = snowflake_database.apexml.name
-  schema   = snowflake_schema.dev.name
+  schema   = snowflake_schema.raw.name
 
   target_lag {
     maximum_duration = "1 hour"

@@ -47,8 +47,8 @@ async def refresh_pipeline():
     """
     Run the full data refresh pipeline:
     1. Extract latest race data from OpenF1 API
-    2. Load into Snowflake DEV schema (raw tables)
-    3. Run dbt transformations to update STAGING and PROD schemas
+    2. Load into Snowflake RAW schema (raw tables)
+    3. Run dbt transformations to update STAGING and ANALYTICS schemas
     """
     print("="*80)
     print("F1 DATA REFRESH PIPELINE")

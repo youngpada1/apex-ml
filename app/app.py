@@ -10,9 +10,9 @@ st.set_page_config(page_title="ApexML – F1 Analytics", layout="wide")
 @st.cache_resource
 def get_snowflake_connection():
     # Environment-specific configuration via environment variables:
-    # DEV: APEXML_DEV.PROD (analytics tables for local testing)
-    # STAGING: APEXML_STAGING.PROD (validation environment)
-    # PROD: APEXML_PROD.PROD (production dashboard)
+    # DEV: APEXML_DEV.ANALYTICS (analytics tables for local testing)
+    # STAGING: APEXML_STAGING.ANALYTICS (validation environment)
+    # PROD: APEXML_PROD.ANALYTICS (production dashboard)
 
     return snowflake.connector.connect(
         user=os.getenv('SNOWFLAKE_USER'),
