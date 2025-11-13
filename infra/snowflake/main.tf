@@ -9,9 +9,11 @@ terraform {
 
 provider "snowflake" {
   # Key pair authentication (industry best practice)
-  # Provider v0.94+ uses organization_name and account_name
-  # These are read from SNOWFLAKE_ACCOUNT env var (format: ORGNAME-ACCOUNTNAME)
+  # Provider v0.94+ requires organization_name and account_name separately
 
+  organization_name = "NHCEUNZ"
+  account_name      = "HIC02793"
+  user              = var.snowflake_user
   role              = "ACCOUNTADMIN"
   authenticator     = "JWT"
   private_key_path  = pathexpand("~/.ssh/snowflake_key.p8")
