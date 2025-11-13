@@ -39,14 +39,16 @@ jobs:
       - name: Set up Snowflake private key
         run: |
           mkdir -p ~/.ssh
-          printf '%s/n' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ~/.ssh/snowflake_key.p8
+          echo -e "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ~/.ssh/snowflake_key.p8
           chmod 600 ~/.ssh/snowflake_key.p8
 
-      - name : Verify key + DNS 
+      - name: Verify key format
         run: |
-          grep --q "BEGING PRIVATE KEY" ~/.ssh/snowflake_key.p8 || (echo "No PEM header && exit 1")
-          echo "Resolving Swnoflake host..."
-          nslookup ${{ secrets.SNOWFLAKE_ACCOUNT }}.snowflakecomputing.com || (echo "Bad Snowflake_account value && exit 1")
+          if ! grep -q "BEGIN PRIVATE KEY" ~/.ssh/snowflake_key.p8; then
+            echo "Error: Private key missing PEM header"
+            exit 1
+          fi
+          echo "Private key format verified"
           
 
       - name: Determine environment
