@@ -259,10 +259,12 @@ uv sync
 
 ```bash
 # 1. Deploy Snowflake infrastructure
-./library/tf.sh plan dev    # Preview changes
-./library/tf.sh apply dev    # Apply changes
+cd infra/snowflake
+terraform init
+terraform apply -var="environment=dev"
 
 # 2. Run data extraction and loading
+cd ../..
 uv run python snowflake/elt/load.py <session_key>
 
 # 3. Run dbt transformations
@@ -276,36 +278,6 @@ uv run dbt test
 cd ../..
 uv run streamlit run app/app.py
 ```
-
-#### Terraform Helper Script
-
-The `library/tf.sh` script automatically loads environment variables from `.env` and runs Terraform commands:
-
-```bash
-# Usage: ./library/tf.sh <command> <environment>
-
-# Initialize Terraform
-./library/tf.sh init dev
-
-# Preview changes
-./library/tf.sh plan dev
-./library/tf.sh plan staging
-./library/tf.sh plan prod
-
-# Apply changes
-./library/tf.sh apply dev
-
-# Validate configuration
-./library/tf.sh validate dev
-
-# Destroy infrastructure (be careful!)
-./library/tf.sh destroy dev
-```
-
-**Requirements:**
-- `.env` file in project root with `SNOWFLAKE_ACCOUNT` and `SNOWFLAKE_USER`
-- Private key at `~/.ssh/snowflake_key.p8`
-- Terraform installed
 
 ---
 
@@ -347,8 +319,6 @@ apex-ml/
 │       ├── main.tf
 │       ├── grants.tf
 │       └── tables.tf
-├── library/                  # Helper scripts
-│   └── tf.sh                 # Terraform wrapper script
 ├── scripts/                  # Shell scripts
 │   ├── run_dbt.sh
 │   └── setup_snowflake_keypair.sh
