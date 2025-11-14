@@ -14,7 +14,7 @@ resource "snowflake_grant_account_role" "ml_engineer_to_data_engineer" {
   parent_role_name = snowflake_account_role.data_engineer.name
 }
 
-# Database grants - use resource reference, not hardcoded name
+# Database grants
 resource "snowflake_grant_privileges_to_account_role" "database_usage_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE SCHEMA"]
@@ -42,11 +42,13 @@ resource "snowflake_grant_privileges_to_account_role" "database_usage_ml_enginee
   }
 }
 
-# RAW schema grants - use resource references
+# RAW schema grants
 resource "snowflake_grant_privileges_to_account_role" "raw_schema_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "CREATE VIEW", "MODIFY"]
-  on_schema {
+
+  on_schema_object {
+    object_type = "SCHEMA"
     schema_name = "${local.database_name}.${snowflake_schema.raw.name}"
   }
 }
@@ -54,71 +56,75 @@ resource "snowflake_grant_privileges_to_account_role" "raw_schema_data_engineer"
 resource "snowflake_grant_privileges_to_account_role" "raw_tables_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]
+
   on_schema_object {
-    all {
-      object_type_plural = "TABLES"
-      in_schema          = "${local.database_name}.${snowflake_schema.raw.name}"
-    }
+    object_type = "TABLE"
+    all         = true
+    schema_name = "${local.database_name}.${snowflake_schema.raw.name}"
   }
 }
 
 resource "snowflake_grant_privileges_to_account_role" "raw_future_tables_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]
+
   on_schema_object {
-    future {
-      object_type_plural = "TABLES"
-      in_schema          = "${local.database_name}.${snowflake_schema.raw.name}"
-    }
+    object_type = "TABLE"
+    future      = true
+    schema_name = "${local.database_name}.${snowflake_schema.raw.name}"
   }
 }
 
-# STAGING schema grants - use resource references
+# STAGING schema grants
 resource "snowflake_grant_privileges_to_account_role" "staging_schema_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "CREATE VIEW", "MODIFY"]
-  on_schema {
+
+  on_schema_object {
+    object_type = "SCHEMA"
     schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
   }
 }
 
-resource "snowflake_grant_privileges_to_account_role" "staging_all_data_engineer" {
+resource "snowflake_grant_privileges_to_account_role" "staging_tables_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+
   on_schema_object {
-    all {
-      object_type_plural = "TABLES"
-      in_schema          = "${local.database_name}.${snowflake_schema.staging.name}"
-    }
+    object_type = "TABLE"
+    all         = true
+    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
   }
 }
 
 resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+
   on_schema_object {
-    future {
-      object_type_plural = "TABLES"
-      in_schema          = "${local.database_name}.${snowflake_schema.staging.name}"
-    }
+    object_type = "TABLE"
+    future      = true
+    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
   }
 }
 
 resource "snowflake_grant_privileges_to_account_role" "staging_future_views_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["SELECT"]
+
   on_schema_object {
-    future {
-      object_type_plural = "VIEWS"
-      in_schema          = "${local.database_name}.${snowflake_schema.staging.name}"
-    }
+    object_type = "VIEW"
+    future      = true
+    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
   }
 }
 
 resource "snowflake_grant_privileges_to_account_role" "staging_schema_analytics_user" {
   account_role_name = snowflake_account_role.analytics_user.name
   privileges        = ["USAGE"]
-  on_schema {
+
+  on_schema_object {
+    object_type = "SCHEMA"
     schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
   }
 }
@@ -126,19 +132,21 @@ resource "snowflake_grant_privileges_to_account_role" "staging_schema_analytics_
 resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_analytics_user" {
   account_role_name = snowflake_account_role.analytics_user.name
   privileges        = ["SELECT"]
+
   on_schema_object {
-    future {
-      object_type_plural = "TABLES"
-      in_schema          = "${local.database_name}.${snowflake_schema.staging.name}"
-    }
+    object_type = "TABLE"
+    future      = true
+    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
   }
 }
 
-# ANALYTICS schema grants - use resource references
+# ANALYTICS schema grants
 resource "snowflake_grant_privileges_to_account_role" "analytics_schema_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "MODIFY"]
-  on_schema {
+
+  on_schema_object {
+    object_type = "SCHEMA"
     schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
@@ -146,29 +154,31 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_data_eng
 resource "snowflake_grant_privileges_to_account_role" "analytics_tables_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+
   on_schema_object {
-    all {
-      object_type_plural = "TABLES"
-      in_schema          = "${local.database_name}.${snowflake_schema.analytics.name}"
-    }
+    object_type = "TABLE"
+    all         = true
+    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
 
 resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+
   on_schema_object {
-    future {
-      object_type_plural = "TABLES"
-      in_schema          = "${local.database_name}.${snowflake_schema.analytics.name}"
-    }
+    object_type = "TABLE"
+    future      = true
+    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
 
 resource "snowflake_grant_privileges_to_account_role" "analytics_schema_analytics_user" {
   account_role_name = snowflake_account_role.analytics_user.name
   privileges        = ["USAGE"]
-  on_schema {
+
+  on_schema_object {
+    object_type = "SCHEMA"
     schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
@@ -176,18 +186,20 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_analytic
 resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_analytics_user" {
   account_role_name = snowflake_account_role.analytics_user.name
   privileges        = ["SELECT"]
+
   on_schema_object {
-    future {
-      object_type_plural = "TABLES"
-      in_schema          = "${local.database_name}.${snowflake_schema.analytics.name}"
-    }
+    object_type = "TABLE"
+    future      = true
+    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
 
 resource "snowflake_grant_privileges_to_account_role" "analytics_schema_ml_engineer" {
   account_role_name = snowflake_account_role.ml_engineer.name
   privileges        = ["USAGE"]
-  on_schema {
+
+  on_schema_object {
+    object_type = "SCHEMA"
     schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
@@ -195,15 +207,15 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_ml_engin
 resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_ml_engineer" {
   account_role_name = snowflake_account_role.ml_engineer.name
   privileges        = ["SELECT"]
+
   on_schema_object {
-    future {
-      object_type_plural = "TABLES"
-      in_schema          = "${local.database_name}.${snowflake_schema.analytics.name}"
-    }
+    object_type = "TABLE"
+    future      = true
+    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
 
-# Warehouse grants - use resource references
+# Warehouse grants
 resource "snowflake_grant_privileges_to_account_role" "etl_warehouse_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "OPERATE"]

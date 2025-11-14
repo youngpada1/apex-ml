@@ -8,21 +8,16 @@ terraform {
 }
 
 provider "snowflake" {
-  # Key pair authentication (industry best practice)
-  # Provider v0.94+ requires organization_name and account_name separately
-
   organization_name = "NHCEUNZ"
   account_name      = "HIC02793"
   user              = var.snowflake_user
   role              = "ACCOUNTADMIN"
   authenticator     = "JWT"
-  private_key_path  = pathexpand("~/.ssh/snowflake_key.p8")
+  private_key       = file(pathexpand("~/.ssh/snowflake_key.p8"))
   warehouse         = "COMPUTE_WH"
 }
 
 # --- RBAC: Environment-Specific Custom Roles ---
-# Each environment has its own set of roles for proper isolation
-
 resource "snowflake_account_role" "data_engineer" {
   name    = "DATA_ENGINEER_${upper(var.environment)}"
   comment = "Role for data engineers with full access to ${var.environment} ETL operations"
@@ -40,8 +35,6 @@ resource "snowflake_account_role" "ml_engineer" {
 
 # --- Role Grants (Hierarchy) ---
 # ACCOUNTADMIN → SYSADMIN → DATA_ENGINEER_ENV → ANALYTICS_USER_ENV
-# Role hierarchy will be set up via SQL after initial creation
-# This avoids deprecated resource types in the new provider version
 
 # --- Service Account for ETL Pipeline ---
 # Each environment has its own service account
