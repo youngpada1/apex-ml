@@ -20,34 +20,36 @@ provider "snowflake" {
   warehouse         = "COMPUTE_WH"
 }
 
-# --- RBAC: Custom Roles ---
+# --- RBAC: Environment-Specific Custom Roles ---
+# Each environment has its own set of roles for proper isolation
 
 resource "snowflake_account_role" "data_engineer" {
-  name    = "DATA_ENGINEER"
-  comment = "Role for data engineers with full access to ETL operations"
+  name    = "DATA_ENGINEER_${upper(var.environment)}"
+  comment = "Role for data engineers with full access to ${var.environment} ETL operations"
 }
 
 resource "snowflake_account_role" "analytics_user" {
-  name    = "ANALYTICS_USER"
-  comment = "Role for analytics users with read-only access"
+  name    = "ANALYTICS_USER_${upper(var.environment)}"
+  comment = "Role for analytics users with read-only access to ${var.environment}"
 }
 
 resource "snowflake_account_role" "ml_engineer" {
-  name    = "ML_ENGINEER"
-  comment = "Role for ML engineers with access to analytics schema"
+  name    = "ML_ENGINEER_${upper(var.environment)}"
+  comment = "Role for ML engineers with access to ${var.environment} analytics schema"
 }
 
 # --- Role Grants (Hierarchy) ---
-# ACCOUNTADMIN → SYSADMIN → DATA_ENGINEER → ANALYTICS_USER
+# ACCOUNTADMIN → SYSADMIN → DATA_ENGINEER_ENV → ANALYTICS_USER_ENV
 # Role hierarchy will be set up via SQL after initial creation
 # This avoids deprecated resource types in the new provider version
 
 # --- Service Account for ETL Pipeline ---
+# Each environment has its own service account
 
 resource "snowflake_user" "etl_service_account" {
-  name         = "ETL_SERVICE_ACCOUNT"
-  login_name   = "etl_service_account"
-  comment      = "Service account for automated ETL pipelines"
+  name         = "ETL_SERVICE_ACCOUNT_${upper(var.environment)}"
+  login_name   = "etl_service_account_${lower(var.environment)}"
+  comment      = "Service account for automated ETL pipelines in ${var.environment}"
   password     = var.etl_service_account_password
   default_role = snowflake_account_role.data_engineer.name
 
@@ -56,7 +58,7 @@ resource "snowflake_user" "etl_service_account" {
   disabled             = false
 }
 
-# Role assignment will be done via SQL after creation
+# Role assignment will be done via SQL after initial creation
 
 # --- Databases ---
 # Three separate databases: APEXML_DEV, APEXML_STAGING, APEXML_PROD

@@ -2,9 +2,11 @@
 # These tables are created in the RAW schema and serve as sources for:
 # - dbt transformations in the STAGING schema
 # - Dynamic tables for data promotion to STAGING/PROD environments
+# Only create regular tables in DEV environment - staging/prod use dynamic tables
 
 # Sessions table - F1 session metadata
 resource "snowflake_table" "sessions" {
+  count    = var.environment == "dev" ? 1 : 0
   database = local.database_name
   schema   = snowflake_schema.raw.name
   name     = "SESSIONS"
@@ -95,6 +97,7 @@ resource "snowflake_table" "sessions" {
 
 # Drivers table - F1 driver information
 resource "snowflake_table" "drivers" {
+  count    = var.environment == "dev" ? 1 : 0
   database = local.database_name
   schema   = snowflake_schema.raw.name
   name     = "DRIVERS"
@@ -178,6 +181,7 @@ resource "snowflake_table" "drivers" {
 
 # Laps table - Lap times and sector data
 resource "snowflake_table" "laps" {
+  count    = var.environment == "dev" ? 1 : 0
   database = local.database_name
   schema   = snowflake_schema.raw.name
   name     = "LAPS"
@@ -261,6 +265,7 @@ resource "snowflake_table" "laps" {
 
 # Positions table - Driver positions throughout the race
 resource "snowflake_table" "positions" {
+  count    = var.environment == "dev" ? 1 : 0
   database = local.database_name
   schema   = snowflake_schema.raw.name
   name     = "POSITIONS"
