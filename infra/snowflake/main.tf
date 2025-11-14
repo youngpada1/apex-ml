@@ -8,13 +8,15 @@ terraform {
 }
 
 provider "snowflake" {
-  organization_name = "NHCEUNZ"
-  account_name      = "HIC02793"
-  user              = var.snowflake_user
-  role              = "ACCOUNTADMIN"
-  authenticator     = "JWT"
-  private_key       = file(pathexpand("~/.ssh/snowflake_key.p8"))
-  warehouse         = "COMPUTE_WH"
+  # Key pair authentication (industry best practice)
+  # Using legacy account format (org-account) for compatibility
+
+  account       = var.snowflake_account
+  user          = var.snowflake_user
+  role          = "ACCOUNTADMIN"
+  authenticator = "JWT"
+  private_key   = file(pathexpand("~/.ssh/snowflake_key.p8"))
+  warehouse     = "COMPUTE_WH"
 }
 
 # --- RBAC: Environment-Specific Custom Roles ---
@@ -81,34 +83,23 @@ resource "snowflake_database" "apexml_prod" {
   data_retention_time_in_days = 7
 }
 
-# Local value to reference the current environment's database
-locals {
-  database_name = var.environment == "dev" ? (
-    length(snowflake_database.apexml_dev) > 0 ? snowflake_database.apexml_dev[0].name : "APEXML_DEV"
-  ) : var.environment == "staging" ? (
-    length(snowflake_database.apexml_staging) > 0 ? snowflake_database.apexml_staging[0].name : "APEXML_STAGING"
-  ) : (
-    length(snowflake_database.apexml_prod) > 0 ? snowflake_database.apexml_prod[0].name : "APEXML_PROD"
-  )
-}
-
 # --- Schemas ---
 # Each environment gets its own RAW, STAGING, and ANALYTICS schemas
 
 resource "snowflake_schema" "raw" {
-  database = local.database_name
+  database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   name     = "RAW"
   comment  = "Raw data ingested from OpenF1 API"
 }
 
 resource "snowflake_schema" "staging" {
-  database = local.database_name
+  database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   name     = "STAGING"
   comment  = "Cleaned and transformed data"
 }
 
 resource "snowflake_schema" "analytics" {
-  database = local.database_name
+  database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   name     = "ANALYTICS"
   comment  = "Production-ready analytics data for ML and visualizations"
 }

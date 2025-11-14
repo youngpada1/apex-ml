@@ -1,5 +1,5 @@
 output "database_name" {
-  value       = local.database_name
+  value       = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   description = "Snowflake database name"
 }
 

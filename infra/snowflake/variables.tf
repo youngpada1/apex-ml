@@ -1,6 +1,16 @@
 variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be dev, staging, or prod."
+  }
+}
+
+variable "snowflake_account" {
+  description = "Snowflake account identifier (format: org-account)"
+  type        = string
 }
 
 variable "snowflake_user" {

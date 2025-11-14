@@ -7,7 +7,7 @@
 # Sessions table - F1 session metadata
 resource "snowflake_table" "sessions" {
   count    = var.environment == "dev" ? 1 : 0
-  database = local.database_name
+  database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   schema   = snowflake_schema.raw.name
   name     = "SESSIONS"
   comment  = "F1 session metadata from OpenF1 API"
@@ -98,7 +98,7 @@ resource "snowflake_table" "sessions" {
 # Drivers table - F1 driver information
 resource "snowflake_table" "drivers" {
   count    = var.environment == "dev" ? 1 : 0
-  database = local.database_name
+  database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   schema   = snowflake_schema.raw.name
   name     = "DRIVERS"
   comment  = "F1 driver information from OpenF1 API"
@@ -182,7 +182,7 @@ resource "snowflake_table" "drivers" {
 # Laps table - Lap times and sector data
 resource "snowflake_table" "laps" {
   count    = var.environment == "dev" ? 1 : 0
-  database = local.database_name
+  database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   schema   = snowflake_schema.raw.name
   name     = "LAPS"
   comment  = "Lap times and sector data from OpenF1 API"
@@ -266,7 +266,7 @@ resource "snowflake_table" "laps" {
 # Positions table - Driver positions throughout the race
 resource "snowflake_table" "positions" {
   count    = var.environment == "dev" ? 1 : 0
-  database = local.database_name
+  database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   schema   = snowflake_schema.raw.name
   name     = "POSITIONS"
   comment  = "Driver positions throughout the race from OpenF1 API"

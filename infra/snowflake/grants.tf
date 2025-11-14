@@ -15,12 +15,13 @@ resource "snowflake_grant_account_role" "ml_engineer_to_data_engineer" {
 }
 
 # Database grants
+# Each workspace grants permissions to its own database (dev, staging, or prod)
 resource "snowflake_grant_privileges_to_account_role" "database_usage_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE SCHEMA"]
   on_account_object {
     object_type = "DATABASE"
-    object_name =  snowflake_database.apexml.name
+    object_name = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   }
 }
 
@@ -29,7 +30,7 @@ resource "snowflake_grant_privileges_to_account_role" "database_usage_analytics_
   privileges        = ["USAGE"]
   on_account_object {
     object_type = "DATABASE"
-    object_name =  snowflake_database.apexml.name
+    object_name = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   }
 }
 
@@ -38,7 +39,7 @@ resource "snowflake_grant_privileges_to_account_role" "database_usage_ml_enginee
   privileges        = ["USAGE"]
   on_account_object {
     object_type = "DATABASE"
-    object_name = snowflake_database.apexml.name
+    object_name = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   }
 }
 
@@ -47,9 +48,8 @@ resource "snowflake_grant_privileges_to_account_role" "raw_schema_data_engineer"
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "CREATE VIEW", "MODIFY"]
 
-  on_schema_object {
-    object_type = "SCHEMA"
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.raw.name}"
+  on_schema {
+    schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}"
   }
 }
 
@@ -58,9 +58,10 @@ resource "snowflake_grant_privileges_to_account_role" "raw_tables_data_engineer"
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]
 
   on_schema_object {
-    object_type = "TABLE"
-    all         = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.raw.name}"
+    all {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}"
+    }
   }
 }
 
@@ -69,9 +70,10 @@ resource "snowflake_grant_privileges_to_account_role" "raw_future_tables_data_en
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]
 
   on_schema_object {
-    object_type = "TABLE"
-    future      = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.raw.name}"
+    future {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}"
+    }
   }
 }
 
@@ -80,9 +82,8 @@ resource "snowflake_grant_privileges_to_account_role" "staging_schema_data_engin
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "CREATE VIEW", "MODIFY"]
 
-  on_schema_object {
-    object_type = "SCHEMA"
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
+  on_schema {
+    schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -91,9 +92,10 @@ resource "snowflake_grant_privileges_to_account_role" "staging_tables_data_engin
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
 
   on_schema_object {
-    object_type = "TABLE"
-    all         = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
+    all {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
   }
 }
 
@@ -102,9 +104,10 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_dat
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
 
   on_schema_object {
-    object_type = "TABLE"
-    future      = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
+    future {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
   }
 }
 
@@ -113,9 +116,10 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_views_data
   privileges        = ["SELECT"]
 
   on_schema_object {
-    object_type = "VIEW"
-    future      = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
+    future {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
   }
 }
 
@@ -123,9 +127,8 @@ resource "snowflake_grant_privileges_to_account_role" "staging_schema_analytics_
   account_role_name = snowflake_account_role.analytics_user.name
   privileges        = ["USAGE"]
 
-  on_schema_object {
-    object_type = "SCHEMA"
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
+  on_schema {
+    schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -134,9 +137,10 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_ana
   privileges        = ["SELECT"]
 
   on_schema_object {
-    object_type = "TABLE"
-    future      = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
+    future {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
   }
 }
 
@@ -145,9 +149,8 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_data_eng
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "MODIFY"]
 
-  on_schema_object {
-    object_type = "SCHEMA"
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
+  on_schema {
+    schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -156,9 +159,10 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_tables_data_eng
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
 
   on_schema_object {
-    object_type = "TABLE"
-    all         = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
+    all {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
   }
 }
 
@@ -167,9 +171,10 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_d
   privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
 
   on_schema_object {
-    object_type = "TABLE"
-    future      = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
+    future {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
   }
 }
 
@@ -177,9 +182,8 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_analytic
   account_role_name = snowflake_account_role.analytics_user.name
   privileges        = ["USAGE"]
 
-  on_schema_object {
-    object_type = "SCHEMA"
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
+  on_schema {
+    schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -188,9 +192,10 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_a
   privileges        = ["SELECT"]
 
   on_schema_object {
-    object_type = "TABLE"
-    future      = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
+    future {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
   }
 }
 
@@ -198,9 +203,8 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_ml_engin
   account_role_name = snowflake_account_role.ml_engineer.name
   privileges        = ["USAGE"]
 
-  on_schema_object {
-    object_type = "SCHEMA"
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
+  on_schema {
+    schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -209,9 +213,10 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_m
   privileges        = ["SELECT"]
 
   on_schema_object {
-    object_type = "TABLE"
-    future      = true
-    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
+    future {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
   }
 }
 
