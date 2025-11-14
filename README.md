@@ -40,31 +40,59 @@ ApexML is a comprehensive data engineering platform that:
    └──────┬───────┘
           │
           ↓
-2️⃣ DATA WAREHOUSE (Snowflake)
-   ┌────────────────────────────────────────┐
-   │         APEXML_DEV Database            │
-   ├────────────────────────────────────────┤
-   │  📁 RAW Schema                         │
-   │    • sessions   (raw API data)         │
-   │    • drivers    (raw API data)         │
-   │    • positions  (raw API data)         │
-   │    • laps       (raw API data)         │
-   ├────────────────────────────────────────┤
-   │           ↓ dbt transformations        │
-   ├────────────────────────────────────────┤
-   │  📁 STAGING Schema (views)             │
-   │    • stg_sessions   (cleaned)          │
-   │    • stg_drivers    (deduplicated)     │
-   │    • stg_laps       (validated)        │
-   │    • stg_positions  (filtered)         │
-   ├────────────────────────────────────────┤
-   │           ↓ dbt transformations        │
-   ├────────────────────────────────────────┤
-   │  📁 ANALYTICS Schema (tables)          │
-   │    • dim_drivers        (dimension)    │
-   │    • fct_lap_times      (fact)         │
-   │    • fct_race_results   (fact)         │
-   └────────┬───────────────────────────────┘
+2️⃣ DATA WAREHOUSE (Snowflake - Multi-Environment)
+   ┌────────────────────────────────────────────────────────────────┐
+   │                    APEXML_DEV Database                         │
+   ├────────────────────────────────────────────────────────────────┤
+   │  📁 RAW Schema (regular tables)                                │
+   │    • sessions   (source data from OpenF1 API)                  │
+   │    • drivers    (source data from OpenF1 API)                  │
+   │    • positions  (source data from OpenF1 API)                  │
+   │    • laps       (source data from OpenF1 API)                  │
+   ├────────────────────────────────────────────────────────────────┤
+   │           ↓ dbt transformations                                │
+   ├────────────────────────────────────────────────────────────────┤
+   │  📁 STAGING Schema (views)                                     │
+   │    • stg_sessions   (cleaned)                                  │
+   │    • stg_drivers    (deduplicated)                             │
+   │    • stg_laps       (validated)                                │
+   │    • stg_positions  (filtered)                                 │
+   ├────────────────────────────────────────────────────────────────┤
+   │           ↓ dbt transformations                                │
+   ├────────────────────────────────────────────────────────────────┤
+   │  📁 ANALYTICS Schema (tables)                                  │
+   │    • dim_drivers        (dimension)                            │
+   │    • fct_lap_times      (fact)                                 │
+   │    • fct_race_results   (fact)                                 │
+   └────────┬───────────────────────────────────────────────────────┘
+            │
+            ↓ Dynamic tables (1 hour lag)
+   ┌────────────────────────────────────────────────────────────────┐
+   │                 APEXML_STAGING Database                        │
+   ├────────────────────────────────────────────────────────────────┤
+   │  📁 RAW Schema (dynamic tables)                                │
+   │    • sessions   (synced from APEXML_DEV.RAW.SESSIONS)          │
+   │    • drivers    (synced from APEXML_DEV.RAW.DRIVERS)           │
+   │    • positions  (synced from APEXML_DEV.RAW.POSITIONS)         │
+   │    • laps       (synced from APEXML_DEV.RAW.LAPS)              │
+   ├────────────────────────────────────────────────────────────────┤
+   │  📁 STAGING Schema (dbt views)                                 │
+   │  📁 ANALYTICS Schema (dbt tables)                              │
+   └────────┬───────────────────────────────────────────────────────┘
+            │
+            ↓ Dynamic tables (1 hour lag)
+   ┌────────────────────────────────────────────────────────────────┐
+   │                  APEXML_PROD Database                          │
+   ├────────────────────────────────────────────────────────────────┤
+   │  📁 RAW Schema (dynamic tables)                                │
+   │    • sessions   (synced from APEXML_STAGING.RAW.SESSIONS)      │
+   │    • drivers    (synced from APEXML_STAGING.RAW.DRIVERS)       │
+   │    • positions  (synced from APEXML_STAGING.RAW.POSITIONS)     │
+   │    • laps       (synced from APEXML_STAGING.RAW.LAPS)          │
+   ├────────────────────────────────────────────────────────────────┤
+   │  📁 STAGING Schema (dbt views)                                 │
+   │  📁 ANALYTICS Schema (dbt tables)                              │
+   └────────┬───────────────────────────────────────────────────────┘
             │
             ↓
 3️⃣ TRANSFORMATION (dbt)
@@ -97,9 +125,10 @@ ApexML is a comprehensive data engineering platform that:
 
 **Data Ingestion:** OpenF1 API, Python 3.11+, httpx, snowflake-connector-python
 **Transformation:** dbt Core, dbt-snowflake (SQL-based ELT)
-**Data Warehouse:** Snowflake (RAW → STAGING → ANALYTICS schemas)
+**Data Warehouse:** Snowflake (Multi-environment: DEV → STAGING → PROD)
+**Data Promotion:** Snowflake Dynamic Tables (1-hour refresh lag)
 **Visualization:** Streamlit
-**Infrastructure:** Terraform (IaC)
+**Infrastructure:** Terraform (IaC with workspace isolation)
 **Package Manager:** uv (fast Python package manager)
 **Testing:** pytest
 **CI/CD:** GitHub Actions
@@ -258,26 +287,33 @@ uv sync
 ### Running the Pipeline
 
 ```bash
-# 1. Deploy Snowflake infrastructure
+# 1. Deploy Snowflake infrastructure (DEV environment)
 cd infra/snowflake
 terraform init
+terraform workspace new dev
 terraform apply -var="environment=dev"
 
-# 2. Run data extraction and loading
+# 2. Deploy STAGING environment (creates dynamic tables)
+terraform workspace new staging
+terraform apply -var="environment=staging"
+
+# 3. Run data extraction and loading (to DEV)
 cd ../..
 uv run python snowflake/elt/load.py <session_key>
 
-# 3. Run dbt transformations
+# 4. Run dbt transformations
 ./scripts/run_dbt.sh
 
-# 4. Run dbt tests
+# 5. Run dbt tests
 cd snowflake/dbt_project
 uv run dbt test
 
-# 5. Launch Streamlit dashboard
+# 6. Launch Streamlit dashboard
 cd ../..
 uv run streamlit run app/app.py
 ```
+
+**Note:** Data flows automatically from DEV → STAGING via dynamic tables with 1-hour refresh lag.
 
 ---
 
