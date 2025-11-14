@@ -65,6 +65,11 @@ fi
 # Change to the terraform directory
 cd "$TF_DIR"
 
+# Select the appropriate workspace
+echo "Selecting workspace: $ENVIRONMENT"
+"$TERRAFORM_BIN" workspace select "$ENVIRONMENT" || "$TERRAFORM_BIN" workspace new "$ENVIRONMENT"
+echo ""
+
 # Run the terraform command
 case "$COMMAND" in
     init)
