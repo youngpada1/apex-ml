@@ -20,7 +20,7 @@ resource "snowflake_grant_privileges_to_account_role" "database_usage_data_engin
   privileges        = ["USAGE", "CREATE SCHEMA"]
   on_account_object {
     object_type = "DATABASE"
-    object_name = local.database_name
+    object_name =  snowflake_database.apexml.name
   }
 }
 
@@ -29,7 +29,7 @@ resource "snowflake_grant_privileges_to_account_role" "database_usage_analytics_
   privileges        = ["USAGE"]
   on_account_object {
     object_type = "DATABASE"
-    object_name = local.database_name
+    object_name =  snowflake_database.apexml.name
   }
 }
 
@@ -38,7 +38,7 @@ resource "snowflake_grant_privileges_to_account_role" "database_usage_ml_enginee
   privileges        = ["USAGE"]
   on_account_object {
     object_type = "DATABASE"
-    object_name = local.database_name
+    object_name = snowflake_database.apexml.name
   }
 }
 
@@ -49,7 +49,7 @@ resource "snowflake_grant_privileges_to_account_role" "raw_schema_data_engineer"
 
   on_schema_object {
     object_type = "SCHEMA"
-    schema_name = "${local.database_name}.${snowflake_schema.raw.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.raw.name}"
   }
 }
 
@@ -60,7 +60,7 @@ resource "snowflake_grant_privileges_to_account_role" "raw_tables_data_engineer"
   on_schema_object {
     object_type = "TABLE"
     all         = true
-    schema_name = "${local.database_name}.${snowflake_schema.raw.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.raw.name}"
   }
 }
 
@@ -71,7 +71,7 @@ resource "snowflake_grant_privileges_to_account_role" "raw_future_tables_data_en
   on_schema_object {
     object_type = "TABLE"
     future      = true
-    schema_name = "${local.database_name}.${snowflake_schema.raw.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.raw.name}"
   }
 }
 
@@ -82,7 +82,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_schema_data_engin
 
   on_schema_object {
     object_type = "SCHEMA"
-    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -93,7 +93,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_tables_data_engin
   on_schema_object {
     object_type = "TABLE"
     all         = true
-    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -104,7 +104,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_dat
   on_schema_object {
     object_type = "TABLE"
     future      = true
-    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -115,7 +115,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_views_data
   on_schema_object {
     object_type = "VIEW"
     future      = true
-    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -125,7 +125,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_schema_analytics_
 
   on_schema_object {
     object_type = "SCHEMA"
-    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -136,7 +136,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_ana
   on_schema_object {
     object_type = "TABLE"
     future      = true
-    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -147,7 +147,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_data_eng
 
   on_schema_object {
     object_type = "SCHEMA"
-    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -158,7 +158,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_tables_data_eng
   on_schema_object {
     object_type = "TABLE"
     all         = true
-    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -169,7 +169,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_d
   on_schema_object {
     object_type = "TABLE"
     future      = true
-    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -179,7 +179,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_analytic
 
   on_schema_object {
     object_type = "SCHEMA"
-    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -190,7 +190,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_a
   on_schema_object {
     object_type = "TABLE"
     future      = true
-    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -200,7 +200,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_ml_engin
 
   on_schema_object {
     object_type = "SCHEMA"
-    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -211,7 +211,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_m
   on_schema_object {
     object_type = "TABLE"
     future      = true
-    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
+    schema_name = "${snowflake_database.apexml.name}.${snowflake_schema.analytics.name}"
   }
 }
 
