@@ -1,5 +1,5 @@
 output "database_name" {
-  value       = snowflake_database.apexml.name
+  value       = local.database_name
   description = "Snowflake database name"
 }
 

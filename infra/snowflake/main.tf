@@ -58,31 +58,62 @@ resource "snowflake_user" "etl_service_account" {
 
 # Role assignment will be done via SQL after creation
 
-# --- Database ---
+# --- Databases ---
+# Three separate databases: APEXML_DEV, APEXML_STAGING, APEXML_PROD
+# Conditional creation based on var.environment to ensure workspace isolation
 
-resource "snowflake_database" "apexml" {
-  name    = "APEXML_${upper(var.environment)}"
-  comment = "ApexML F1 Analytics Database - ${var.environment} environment"
+resource "snowflake_database" "apexml_dev" {
+  count   = var.environment == "dev" ? 1 : 0
+  name    = "APEXML_DEV"
+  comment = "ApexML F1 Analytics Database - DEV environment"
 
-  data_retention_time_in_days = var.environment == "prod" ? 7 : 1
+  data_retention_time_in_days = 1
+}
+
+resource "snowflake_database" "apexml_staging" {
+  count   = var.environment == "staging" ? 1 : 0
+  name    = "APEXML_STAGING"
+  comment = "ApexML F1 Analytics Database - STAGING environment"
+
+  data_retention_time_in_days = 1
+}
+
+resource "snowflake_database" "apexml_prod" {
+  count   = var.environment == "prod" ? 1 : 0
+  name    = "APEXML_PROD"
+  comment = "ApexML F1 Analytics Database - PROD environment"
+
+  data_retention_time_in_days = 7
+}
+
+# Local value to reference the current environment's database
+locals {
+  database_name = var.environment == "dev" ? (
+    length(snowflake_database.apexml_dev) > 0 ? snowflake_database.apexml_dev[0].name : "APEXML_DEV"
+  ) : var.environment == "staging" ? (
+    length(snowflake_database.apexml_staging) > 0 ? snowflake_database.apexml_staging[0].name : "APEXML_STAGING"
+  ) : (
+    length(snowflake_database.apexml_prod) > 0 ? snowflake_database.apexml_prod[0].name : "APEXML_PROD"
+  )
 }
 
 # --- Schemas ---
+# Each environment gets its own RAW, STAGING, and ANALYTICS schemas
 
 resource "snowflake_schema" "raw" {
-  database = snowflake_database.apexml.name
+  database = local.database_name
   name     = "RAW"
   comment  = "Raw data ingested from OpenF1 API"
 }
 
 resource "snowflake_schema" "staging" {
-  database = snowflake_database.apexml.name
+  database = local.database_name
   name     = "STAGING"
   comment  = "Cleaned and transformed data"
 }
 
 resource "snowflake_schema" "analytics" {
-  database = snowflake_database.apexml.name
+  database = local.database_name
   name     = "ANALYTICS"
   comment  = "Production-ready analytics data for ML and visualizations"
 }

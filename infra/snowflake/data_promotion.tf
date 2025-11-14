@@ -14,7 +14,7 @@ resource "snowflake_dynamic_table" "staging_sessions" {
   count = local.should_promote_from_dev ? 1 : 0
 
   name     = "SESSIONS"
-  database = snowflake_database.apexml.name
+  database = local.database_name
   schema   = snowflake_schema.raw.name
 
   target_lag {
@@ -34,7 +34,7 @@ resource "snowflake_dynamic_table" "staging_drivers" {
   count = local.should_promote_from_dev ? 1 : 0
 
   name     = "DRIVERS"
-  database = snowflake_database.apexml.name
+  database = local.database_name
   schema   = snowflake_schema.raw.name
 
   target_lag {
@@ -54,7 +54,7 @@ resource "snowflake_dynamic_table" "staging_laps" {
   count = local.should_promote_from_dev ? 1 : 0
 
   name     = "LAPS"
-  database = snowflake_database.apexml.name
+  database = local.database_name
   schema   = snowflake_schema.raw.name
 
   target_lag {
@@ -74,7 +74,7 @@ resource "snowflake_dynamic_table" "staging_positions" {
   count = local.should_promote_from_dev ? 1 : 0
 
   name     = "POSITIONS"
-  database = snowflake_database.apexml.name
+  database = local.database_name
   schema   = snowflake_schema.raw.name
 
   target_lag {
@@ -109,14 +109,14 @@ resource "snowflake_dynamic_table" "staging_positions" {
 #   count = local.should_promote_from_dev ? 1 : 0
 #
 #   name      = "PROMOTE_SESSIONS"
-#   database  = snowflake_database.apexml.name
+#   database  = local.database_name
 #   schema    = snowflake_schema.raw.name
 #   warehouse = snowflake_warehouse.etl_warehouse.name
 #
 #   schedule = "USING CRON 0 * * * * UTC"  # Every hour
 #
 #   sql_statement = <<-SQL
-#     MERGE INTO ${snowflake_database.apexml.name}.RAW.SESSIONS dst
+#     MERGE INTO ${local.database_name}.RAW.SESSIONS dst
 #     USING (SELECT * FROM DEV_SESSIONS_STREAM) src
 #     ON dst.session_key = src.session_key
 #     WHEN MATCHED THEN UPDATE SET *
