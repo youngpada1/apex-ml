@@ -71,7 +71,8 @@ jobs:
         timeout-minutes: 5
         working-directory: infra/snowflake
         env:
-          TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: terraform init
 
@@ -102,7 +103,8 @@ jobs:
       - name: Terraform Plan
         working-directory: infra/snowflake
         env:
-          TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: |
           terraform plan -var="environment=${{ steps.env.outputs.environment }}" -out=tfplan
@@ -110,7 +112,8 @@ jobs:
       - name: Terraform Apply
         working-directory: infra/snowflake
         env:
-          TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: terraform apply -auto-approve tfplan
 
