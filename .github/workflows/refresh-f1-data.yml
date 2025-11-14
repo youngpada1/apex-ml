@@ -47,7 +47,7 @@ jobs:
           SNOWFLAKE_DATABASE: APEXML_DEV
           SNOWFLAKE_SCHEMA: RAW
           SNOWFLAKE_WAREHOUSE: ETL_WH_DEV
-          SNOWFLAKE_ROLE: DATA_ENGINEER
+          SNOWFLAKE_ROLE: DATA_ENGINEER_DEV
         run: |
           cd snowflake/elt
           uv run python refresh_latest.py
