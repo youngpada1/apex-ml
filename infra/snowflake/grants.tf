@@ -1,3 +1,4 @@
+# Role hierarchy grants
 resource "snowflake_grant_account_role" "data_engineer_to_sysadmin" {
   role_name        = snowflake_account_role.data_engineer.name
   parent_role_name = "SYSADMIN"
@@ -13,6 +14,7 @@ resource "snowflake_grant_account_role" "ml_engineer_to_data_engineer" {
   parent_role_name = snowflake_account_role.data_engineer.name
 }
 
+# Database grants - use resource reference, not hardcoded name
 resource "snowflake_grant_privileges_to_account_role" "database_usage_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE SCHEMA"]
@@ -40,11 +42,12 @@ resource "snowflake_grant_privileges_to_account_role" "database_usage_ml_enginee
   }
 }
 
+# RAW schema grants - use resource references
 resource "snowflake_grant_privileges_to_account_role" "raw_schema_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "CREATE VIEW", "MODIFY"]
   on_schema {
-    schema_name = "\"${local.database_name}\".\"${snowflake_schema.raw.name}\""
+    schema_name = "${local.database_name}.${snowflake_schema.raw.name}"
   }
 }
 
@@ -54,7 +57,7 @@ resource "snowflake_grant_privileges_to_account_role" "raw_tables_data_engineer"
   on_schema_object {
     all {
       object_type_plural = "TABLES"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.raw.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.raw.name}"
     }
   }
 }
@@ -65,16 +68,17 @@ resource "snowflake_grant_privileges_to_account_role" "raw_future_tables_data_en
   on_schema_object {
     future {
       object_type_plural = "TABLES"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.raw.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.raw.name}"
     }
   }
 }
 
+# STAGING schema grants - use resource references
 resource "snowflake_grant_privileges_to_account_role" "staging_schema_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "CREATE VIEW", "MODIFY"]
   on_schema {
-    schema_name = "\"${local.database_name}\".\"${snowflake_schema.staging.name}\""
+    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -84,7 +88,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_all_data_engineer
   on_schema_object {
     all {
       object_type_plural = "TABLES"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.staging.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.staging.name}"
     }
   }
 }
@@ -95,7 +99,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_dat
   on_schema_object {
     future {
       object_type_plural = "TABLES"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.staging.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.staging.name}"
     }
   }
 }
@@ -106,7 +110,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_views_data
   on_schema_object {
     future {
       object_type_plural = "VIEWS"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.staging.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.staging.name}"
     }
   }
 }
@@ -115,7 +119,7 @@ resource "snowflake_grant_privileges_to_account_role" "staging_schema_analytics_
   account_role_name = snowflake_account_role.analytics_user.name
   privileges        = ["USAGE"]
   on_schema {
-    schema_name = "\"${local.database_name}\".\"${snowflake_schema.staging.name}\""
+    schema_name = "${local.database_name}.${snowflake_schema.staging.name}"
   }
 }
 
@@ -125,16 +129,17 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_ana
   on_schema_object {
     future {
       object_type_plural = "TABLES"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.staging.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.staging.name}"
     }
   }
 }
 
+# ANALYTICS schema grants - use resource references
 resource "snowflake_grant_privileges_to_account_role" "analytics_schema_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "MODIFY"]
   on_schema {
-    schema_name = "\"${local.database_name}\".\"${snowflake_schema.analytics.name}\""
+    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -144,7 +149,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_tables_data_eng
   on_schema_object {
     all {
       object_type_plural = "TABLES"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.analytics.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.analytics.name}"
     }
   }
 }
@@ -155,7 +160,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_d
   on_schema_object {
     future {
       object_type_plural = "TABLES"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.analytics.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.analytics.name}"
     }
   }
 }
@@ -164,7 +169,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_analytic
   account_role_name = snowflake_account_role.analytics_user.name
   privileges        = ["USAGE"]
   on_schema {
-    schema_name = "\"${local.database_name}\".\"${snowflake_schema.analytics.name}\""
+    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -174,7 +179,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_a
   on_schema_object {
     future {
       object_type_plural = "TABLES"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.analytics.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.analytics.name}"
     }
   }
 }
@@ -183,7 +188,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_ml_engin
   account_role_name = snowflake_account_role.ml_engineer.name
   privileges        = ["USAGE"]
   on_schema {
-    schema_name = "\"${local.database_name}\".\"${snowflake_schema.analytics.name}\""
+    schema_name = "${local.database_name}.${snowflake_schema.analytics.name}"
   }
 }
 
@@ -193,11 +198,12 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_m
   on_schema_object {
     future {
       object_type_plural = "TABLES"
-      in_schema          = "\"${local.database_name}\".\"${snowflake_schema.analytics.name}\""
+      in_schema          = "${local.database_name}.${snowflake_schema.analytics.name}"
     }
   }
 }
 
+# Warehouse grants - use resource references
 resource "snowflake_grant_privileges_to_account_role" "etl_warehouse_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "OPERATE"]
@@ -225,6 +231,7 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_warehouse_ml_en
   }
 }
 
+# User role assignment
 resource "snowflake_grant_account_role" "etl_service_account_data_engineer" {
   role_name = snowflake_account_role.data_engineer.name
   user_name = snowflake_user.etl_service_account.name
