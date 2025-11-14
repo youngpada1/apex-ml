@@ -17,4 +17,5 @@ dependencies = [
 members = [
     "tests",
     "infra/snowflake",
+    "library",
 ]

@@ -24,7 +24,7 @@ resource "snowflake_dynamic_table" "staging_sessions" {
   warehouse = snowflake_warehouse.etl_warehouse.name
 
   query = <<-SQL
-    SELECT * FROM APEXML_DEV.DEV.SESSIONS
+    SELECT * FROM APEXML_DEV.RAW.SESSIONS
   SQL
 
   comment = "Dynamic table syncing sessions data from DEV"
@@ -44,7 +44,7 @@ resource "snowflake_dynamic_table" "staging_drivers" {
   warehouse = snowflake_warehouse.etl_warehouse.name
 
   query = <<-SQL
-    SELECT * FROM APEXML_DEV.DEV.DRIVERS
+    SELECT * FROM APEXML_DEV.RAW.DRIVERS
   SQL
 
   comment = "Dynamic table syncing drivers data from DEV"
@@ -64,7 +64,7 @@ resource "snowflake_dynamic_table" "staging_laps" {
   warehouse = snowflake_warehouse.etl_warehouse.name
 
   query = <<-SQL
-    SELECT * FROM APEXML_DEV.DEV.LAPS
+    SELECT * FROM APEXML_DEV.RAW.LAPS
   SQL
 
   comment = "Dynamic table syncing laps data from DEV"
@@ -84,7 +84,7 @@ resource "snowflake_dynamic_table" "staging_positions" {
   warehouse = snowflake_warehouse.etl_warehouse.name
 
   query = <<-SQL
-    SELECT * FROM APEXML_DEV.DEV.POSITIONS
+    SELECT * FROM APEXML_DEV.RAW.POSITIONS
   SQL
 
   comment = "Dynamic table syncing positions data from DEV"
