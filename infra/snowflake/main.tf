@@ -16,15 +16,13 @@ terraform {
 }
 
 provider "snowflake" {
-  # Key pair authentication (industry best practice)
-  # Uses environment variables for security:
-  # - SNOWFLAKE_ACCOUNT: format orgname-accountname (will be split)
-  # - SNOWFLAKE_USER: Your Snowflake username
-  # - SNOWFLAKE_PRIVATE_KEY: Private key content (passed via env var)
+  # Key pair authentication reads from environment variables:
+  # - SNOWFLAKE_ACCOUNT (format: ORGNAME-ACCOUNTNAME)
+  # - SNOWFLAKE_USER
+  # - SNOWFLAKE_PRIVATE_KEY
 
   role                = "ACCOUNTADMIN"
   authenticator       = "SNOWFLAKE_JWT"
-  # Read from env var SNOWFLAKE_PRIVATE_KEY instead of file
   warehouse           = "COMPUTE_WH"
 }
 

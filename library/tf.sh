@@ -49,12 +49,11 @@ echo "Using SNOWFLAKE_ACCOUNT: $SNOWFLAKE_ACCOUNT"
 echo "Using SNOWFLAKE_USER: $SNOWFLAKE_USER"
 echo ""
 
-# Export the variables so terraform can use them
-export TF_VAR_snowflake_account="$SNOWFLAKE_ACCOUNT"
-export TF_VAR_snowflake_user="$SNOWFLAKE_USER"
-export TF_VAR_etl_service_account_password="${ETL_SERVICE_ACCOUNT_PASSWORD:-placeholder}"
-# Export private key content directly
+# Export Snowflake provider environment variables
+export SNOWFLAKE_ACCOUNT="$SNOWFLAKE_ACCOUNT"
+export SNOWFLAKE_USER="$SNOWFLAKE_USER"
 export SNOWFLAKE_PRIVATE_KEY="$(cat ~/.ssh/snowflake_key.p8)"
+export TF_VAR_etl_service_account_password="${ETL_SERVICE_ACCOUNT_PASSWORD:-placeholder}"
 
 # Find terraform binary
 TERRAFORM_BIN=$(which terraform 2>/dev/null || echo "/opt/homebrew/bin/terraform")

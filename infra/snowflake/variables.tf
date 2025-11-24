@@ -8,16 +8,6 @@ variable "environment" {
   }
 }
 
-variable "snowflake_account" {
-  description = "Snowflake account identifier in format ORGNAME-ACCOUNTNAME"
-  type        = string
-}
-
-variable "snowflake_user" {
-  description = "Snowflake username for authentication"
-  type        = string
-}
-
 variable "etl_service_account_password" {
   description = "Password for ETL service account (used only for initial setup)"
   type        = string
