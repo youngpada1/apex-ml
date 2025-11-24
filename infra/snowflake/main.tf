@@ -22,7 +22,7 @@ provider "snowflake" {
   # - SNOWFLAKE_USER: Your Snowflake username
   # - SNOWFLAKE_PRIVATE_KEY_PATH: Path to your private key file
 
-  role                = "ACCOUNT_NAME"
+  role                = "ACCOUNTADMIN"
   authenticator       = "JWT"
   private_key_path    = pathexpand("~/.ssh/snowflake_key.p8")
   warehouse           = "COMPUTE_WH"
