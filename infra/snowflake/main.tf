@@ -27,8 +27,8 @@ provider "snowflake" {
   user              = var.snowflake_user
 
   role                = "ACCOUNTADMIN"
-  authenticator       = "JWT"
-  private_key_path    = pathexpand("~/.ssh/snowflake_key.p8")
+  authenticator       = "SNOWFLAKE_JWT"
+  private_key         = file(pathexpand("~/.ssh/snowflake_key.p8"))
   warehouse           = "COMPUTE_WH"
 }
 
