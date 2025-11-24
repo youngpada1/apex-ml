@@ -32,18 +32,11 @@ jobs:
           cd snowflake/elt
           uv sync
 
-      - name: Set up Snowflake private key
-        run: |
-          mkdir -p ~/.ssh
-          cat > ~/.ssh/snowflake_key.p8 << 'EOF'
-          ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-          EOF
-          chmod 600 ~/.ssh/snowflake_key.p8
-
       - name: Run data refresh pipeline
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
           SNOWFLAKE_DATABASE: APEXML_DEV
           SNOWFLAKE_SCHEMA: RAW
           SNOWFLAKE_WAREHOUSE: ETL_WH_DEV

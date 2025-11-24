@@ -10,13 +10,17 @@ def get_snowflake_connection():
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives import serialization
 
-    # Read and parse the private key
-    with open(os.path.expanduser("~/.ssh/snowflake_key.p8"), "rb") as key_file:
-        private_key = serialization.load_pem_private_key(
-            key_file.read(),
-            password=None,
-            backend=default_backend()
-        )
+    # Read private key from environment variable
+    private_key_str = os.getenv("SNOWFLAKE_PRIVATE_KEY")
+    if not private_key_str:
+        raise ValueError("SNOWFLAKE_PRIVATE_KEY environment variable is not set")
+
+    # Parse the private key
+    private_key = serialization.load_pem_private_key(
+        private_key_str.encode('utf-8'),
+        password=None,
+        backend=default_backend()
+    )
 
     pkb = private_key.private_bytes(
         encoding=serialization.Encoding.DER,
