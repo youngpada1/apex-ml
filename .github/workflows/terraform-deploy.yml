@@ -52,16 +52,22 @@ jobs:
           chmod 600 ~/.ssh/snowflake_key.p8
 
       - name: Verify key format
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
         run: |
           echo "Key file exists: $(ls -lh ~/.ssh/snowflake_key.p8)"
           echo "First line: $(head -n 1 ~/.ssh/snowflake_key.p8)"
           echo "Last line: $(tail -n 1 ~/.ssh/snowflake_key.p8)"
           echo "Line count: $(wc -l < ~/.ssh/snowflake_key.p8)"
+          echo "Key byte size: $(wc -c < ~/.ssh/snowflake_key.p8)"
           if ! grep -q "BEGIN PRIVATE KEY" ~/.ssh/snowflake_key.p8; then
             echo "Error: Private key missing PEM header"
             exit 1
           fi
           echo "Private key format verified"
+          echo "SNOWFLAKE_ACCOUNT: $SNOWFLAKE_ACCOUNT"
+          echo "SNOWFLAKE_USER: $SNOWFLAKE_USER"
 
       - name: Determine environment
         id: env
