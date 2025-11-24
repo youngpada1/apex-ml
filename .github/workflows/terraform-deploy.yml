@@ -97,6 +97,16 @@ jobs:
         run: |
           terraform workspace select ${{ steps.env.outputs.environment }} || terraform workspace new ${{ steps.env.outputs.environment }}
 
+      - name: Debug Terraform Variables
+        env:
+          TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
+        run: |
+          echo "Account value: $TF_VAR_snowflake_account"
+          echo "User value: $TF_VAR_snowflake_user"
+          echo "Account length: ${#TF_VAR_snowflake_account}"
+          echo "User length: ${#TF_VAR_snowflake_user}"
+
       - name: Terraform Plan
         working-directory: infra/snowflake
         env:
