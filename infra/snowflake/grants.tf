@@ -43,7 +43,7 @@ resource "snowflake_grant_privileges_to_account_role" "database_usage_ml_enginee
   }
 }
 
-# RAW schema grants
+# RAW schema grants - grants usage and table creation to data engineers
 resource "snowflake_grant_privileges_to_account_role" "raw_schema_data_engineer" {
   account_role_name = snowflake_account_role.data_engineer.name
   privileges        = ["USAGE", "CREATE TABLE", "CREATE VIEW", "MODIFY"]

@@ -7,35 +7,17 @@ from snowflake.connector import DictCursor
 
 
 def get_snowflake_connection():
-    from cryptography.hazmat.backends import default_backend
-    from cryptography.hazmat.primitives import serialization
-
-    # Read private key from environment variable
-    private_key_str = os.getenv("SNOWFLAKE_PRIVATE_KEY")
-    if not private_key_str:
-        raise ValueError("SNOWFLAKE_PRIVATE_KEY environment variable is not set")
-
-    # Parse the private key
-    private_key = serialization.load_pem_private_key(
-        private_key_str.encode('utf-8'),
-        password=None,
-        backend=default_backend()
-    )
-
-    pkb = private_key.private_bytes(
-        encoding=serialization.Encoding.DER,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption()
-    )
+    from pathlib import Path
 
     return snowflake.connector.connect(
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
         user=os.getenv("SNOWFLAKE_USER"),
-        private_key=pkb,
+        authenticator='SNOWFLAKE_JWT',
+        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
         database=os.getenv("SNOWFLAKE_DATABASE", "APEXML_DEV"),
         schema=os.getenv("SNOWFLAKE_SCHEMA", "RAW"),
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE", "ETL_WH_DEV"),
-        role=os.getenv("SNOWFLAKE_ROLE", "DATA_ENGINEER"),
+        role=os.getenv("SNOWFLAKE_ROLE", "DATA_ENGINEER_DEV"),
     )
 
 
