@@ -44,9 +44,11 @@ jobs:
           aws-region: us-east-1
 
       - name: Set up Snowflake private key
+        env:
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" | base64 -d > ~/.ssh/snowflake_key.p8
+          echo "$SNOWFLAKE_PRIVATE_KEY" > ~/.ssh/snowflake_key.p8
           chmod 600 ~/.ssh/snowflake_key.p8
 
       - name: Verify key format
@@ -60,11 +62,6 @@ jobs:
             exit 1
           fi
           echo "Private key format verified"
-          echo "SNOWFLAKE_ACCOUNT value length: ${#SNOWFLAKE_ACCOUNT}"
-          echo "SNOWFLAKE_USER value length: ${#SNOWFLAKE_USER}"
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
 
       - name: Determine environment
         id: env
