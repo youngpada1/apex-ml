@@ -18,9 +18,13 @@ terraform {
 provider "snowflake" {
   # Key pair authentication (industry best practice)
   # Uses environment variables for security:
-  # - SNOWFLAKE_ACCOUNT: Your Snowflake account identifier
+  # - SNOWFLAKE_ACCOUNT: format orgname-accountname (will be split)
   # - SNOWFLAKE_USER: Your Snowflake username
-  # - SNOWFLAKE_PRIVATE_KEY_PATH: Path to your private key file
+
+  # Split SNOWFLAKE_ACCOUNT into org and account (format: ORGNAME-ACCOUNTNAME)
+  organization_name = split("-", var.snowflake_account)[0]
+  account_name      = split("-", var.snowflake_account)[1]
+  user              = var.snowflake_user
 
   role                = "ACCOUNTADMIN"
   authenticator       = "JWT"

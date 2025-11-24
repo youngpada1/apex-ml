@@ -50,8 +50,8 @@ echo "Using SNOWFLAKE_USER: $SNOWFLAKE_USER"
 echo ""
 
 # Export the variables so terraform can use them
-export SNOWFLAKE_ACCOUNT
-export SNOWFLAKE_USER
+export TF_VAR_snowflake_account="$SNOWFLAKE_ACCOUNT"
+export TF_VAR_snowflake_user="$SNOWFLAKE_USER"
 export TF_VAR_etl_service_account_password="${ETL_SERVICE_ACCOUNT_PASSWORD:-placeholder}"
 
 # Find terraform binary
