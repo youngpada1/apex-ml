@@ -26,7 +26,7 @@ jobs:
   terraform:
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'prod' || (github.ref_name == 'staging' && 'staging' || 'dev') }}
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,7 +43,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-
       - name: Determine environment
         id: env
         run: |
@@ -59,27 +58,30 @@ jobs:
         timeout-minutes: 5
         working-directory: infra/snowflake
         env:
+          SNOWFLAKE_ORGANIZATION_NAME: ${{ secrets.SNOWFLAKE_ORGANIZATION_NAME }}
+          SNOWFLAKE_ACCOUNT_NAME: ${{ secrets.SNOWFLAKE_ACCOUNT_NAME }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-          TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: terraform init
 
       - name: Select Terraform Workspace
         working-directory: infra/snowflake
         env:
+          SNOWFLAKE_ORGANIZATION_NAME: ${{ secrets.SNOWFLAKE_ORGANIZATION_NAME }}
+          SNOWFLAKE_ACCOUNT_NAME: ${{ secrets.SNOWFLAKE_ACCOUNT_NAME }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-          TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
         run: |
           terraform workspace select ${{ steps.env.outputs.environment }} || terraform workspace new ${{ steps.env.outputs.environment }}
 
       - name: Terraform Plan
         working-directory: infra/snowflake
         env:
+          SNOWFLAKE_ORGANIZATION_NAME: ${{ secrets.SNOWFLAKE_ORGANIZATION_NAME }}
+          SNOWFLAKE_ACCOUNT_NAME: ${{ secrets.SNOWFLAKE_ACCOUNT_NAME }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-          TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: |
           terraform plan -var="environment=${{ steps.env.outputs.environment }}" -out=tfplan
@@ -87,9 +89,10 @@ jobs:
       - name: Terraform Apply
         working-directory: infra/snowflake
         env:
+          SNOWFLAKE_ORGANIZATION_NAME: ${{ secrets.SNOWFLAKE_ORGANIZATION_NAME }}
+          SNOWFLAKE_ACCOUNT_NAME: ${{ secrets.SNOWFLAKE_ACCOUNT_NAME }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-          TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_etl_service_account_password: ${{ secrets.ETL_SERVICE_ACCOUNT_PASSWORD }}
         run: terraform apply -auto-approve tfplan
 
