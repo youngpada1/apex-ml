@@ -33,6 +33,9 @@ jobs:
           uv sync
 
       - name: Run data refresh pipeline
+        run: |
+          cd snowflake/elt
+          uv run python refresh_latest.py
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
@@ -41,9 +44,6 @@ jobs:
           SNOWFLAKE_SCHEMA: RAW
           SNOWFLAKE_WAREHOUSE: ETL_WH_DEV
           SNOWFLAKE_ROLE: DATA_ENGINEER_DEV
-        run: |
-          cd snowflake/elt
-          uv run python refresh_latest.py
 
       - name: Notify on failure
         if: failure()
