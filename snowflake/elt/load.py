@@ -28,7 +28,7 @@ def load_sessions(conn, sessions: list[dict[str, Any]]) -> int:
     for session in sessions:
         cursor.execute(
             """
-            INSERT INTO sessions (
+            INSERT INTO APEXML_DEV.RAW.SESSIONS (
                 session_key, session_name, session_type, date_start, date_end,
                 gmt_offset, location, country_name, circuit_short_name, year, ingested_at
             ) VALUES (
@@ -53,7 +53,7 @@ def load_drivers(conn, drivers: list[dict[str, Any]]) -> int:
     for driver in drivers:
         cursor.execute(
             """
-            INSERT INTO drivers (
+            INSERT INTO APEXML_DEV.RAW.DRIVERS (
                 driver_number, session_key, broadcast_name, full_name, name_acronym,
                 team_name, team_colour, headshot_url, country_code, ingested_at
             ) VALUES (
@@ -78,7 +78,7 @@ def load_laps(conn, laps: list[dict[str, Any]]) -> int:
     for lap in laps:
         cursor.execute(
             """
-            INSERT INTO laps (
+            INSERT INTO APEXML_DEV.RAW.LAPS (
                 session_key, driver_number, lap_number, lap_duration,
                 segment_1_duration, segment_2_duration, segment_3_duration,
                 is_pit_out_lap, date_start, ingested_at
@@ -115,7 +115,7 @@ def load_positions(conn, positions: list[dict[str, Any]]) -> int:
     for position in positions:
         cursor.execute(
             """
-            INSERT INTO positions (
+            INSERT INTO APEXML_DEV.RAW.POSITIONS (
                 session_key, driver_number, date, position, ingested_at
             ) VALUES (
                 %(session_key)s, %(driver_number)s, %(date)s, %(position)s, %(ingested_at)s

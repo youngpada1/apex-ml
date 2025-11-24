@@ -10,6 +10,11 @@ from datetime import datetime, timedelta, timezone
 from extract import extract_session_data
 from load import load_all
 import httpx
+from dotenv import load_dotenv
+
+# Load environment variables from project root
+project_root = Path(__file__).parent.parent.parent
+load_dotenv(project_root / '.env')
 
 
 async def get_latest_race_session():
