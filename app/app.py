@@ -11,9 +11,17 @@ st.set_page_config(page_title="ApexML – F1 Analytics", layout="wide")
 # Snowflake connection
 @st.cache_resource
 def get_snowflake_connection():
+    account = os.getenv('SNOWFLAKE_ACCOUNT')
+    user = os.getenv('SNOWFLAKE_USER')
+
+    if not account:
+        raise ValueError("SNOWFLAKE_ACCOUNT environment variable is not set")
+    if not user:
+        raise ValueError("SNOWFLAKE_USER environment variable is not set")
+
     return snowflake.connector.connect(
-        user=os.getenv('SNOWFLAKE_USER'),
-        account=os.getenv('SNOWFLAKE_ACCOUNT'),
+        user=user,
+        account=account,
         authenticator='SNOWFLAKE_JWT',
         private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
         warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
