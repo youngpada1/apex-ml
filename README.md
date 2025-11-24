@@ -120,9 +120,10 @@ snowflake-connector-python>=3.18.0
 pytest>=8.3.4
 streamlit>=1.40.2
 plotly>=6.5.0
+python-dotenv>=1.2.1
 ```
 
-### All Installed Packages (101 total)
+### All Installed Packages (102 total)
 
 <details>
 <summary>View all packages</summary>
@@ -201,6 +202,7 @@ pyjwt                                    2.10.1
 pyopenssl                                25.3.0
 pytest                                   8.4.2
 python-dateutil                          2.9.0.post0
+python-dotenv                            1.2.1
 python-slugify                           8.0.4
 pytimeparse                              1.1.8
 pytz                                     2025.2
