@@ -119,9 +119,10 @@ httpx>=0.28.1
 snowflake-connector-python>=3.18.0
 pytest>=8.3.4
 streamlit>=1.40.2
+plotly>=6.5.0
 ```
 
-### All Installed Packages (100 total)
+### All Installed Packages (101 total)
 
 <details>
 <summary>View all packages</summary>
@@ -187,6 +188,7 @@ parsedatetime                            2.6
 pathspec                                 0.12.1
 pillow                                   12.0.0
 platformdirs                             4.5.0
+plotly                                   6.5.0
 pluggy                                   1.6.0
 protobuf                                 6.33.0
 pyarrow                                  21.0.0
