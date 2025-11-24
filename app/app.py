@@ -5,6 +5,10 @@ import os
 from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 st.set_page_config(page_title="ApexML – F1 Analytics", layout="wide")
 
