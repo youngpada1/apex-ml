@@ -20,6 +20,7 @@ provider "snowflake" {
   # Uses environment variables for security:
   # - SNOWFLAKE_ACCOUNT: format orgname-accountname (will be split)
   # - SNOWFLAKE_USER: Your Snowflake username
+  # - SNOWFLAKE_PRIVATE_KEY: Private key content (passed via env var)
 
   # Split SNOWFLAKE_ACCOUNT into org and account (format: ORGNAME-ACCOUNTNAME)
   organization_name = split("-", var.snowflake_account)[0]
@@ -28,7 +29,7 @@ provider "snowflake" {
 
   role                = "ACCOUNTADMIN"
   authenticator       = "SNOWFLAKE_JWT"
-  private_key         = file(pathexpand("~/.ssh/snowflake_key.p8"))
+  # Read from env var SNOWFLAKE_PRIVATE_KEY instead of file
   warehouse           = "COMPUTE_WH"
 }
 

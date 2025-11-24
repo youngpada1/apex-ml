@@ -53,6 +53,8 @@ echo ""
 export TF_VAR_snowflake_account="$SNOWFLAKE_ACCOUNT"
 export TF_VAR_snowflake_user="$SNOWFLAKE_USER"
 export TF_VAR_etl_service_account_password="${ETL_SERVICE_ACCOUNT_PASSWORD:-placeholder}"
+# Export private key content directly
+export SNOWFLAKE_PRIVATE_KEY="$(cat ~/.ssh/snowflake_key.p8)"
 
 # Find terraform binary
 TERRAFORM_BIN=$(which terraform 2>/dev/null || echo "/opt/homebrew/bin/terraform")
