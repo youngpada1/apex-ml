@@ -5,6 +5,14 @@ terraform {
       version = "~> 0.94"
     }
   }
+
+  backend "s3" {
+    bucket         = "apex-ml-terraform-state"
+    key            = "snowflake/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "apex-ml-terraform-locks"
+    encrypt        = true
+  }
 }
 
 provider "snowflake" {
