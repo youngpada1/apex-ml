@@ -42,20 +42,21 @@ Available tables in ANALYTICS schema:
 CRITICAL - Understanding "Latest/Last/Most Recent" Race:
 - When user asks about "last race", "latest race", "most recent race"
 - Use the race with MAX(date_start) from fct_race_results (NOT from ingested_at!)
-- Example query for "who won the last race":
+- Example query for "who won the last race" (COPY THIS EXACTLY):
 
-  SELECT driver_name, team_name, final_position, location, circuit_short_name, year
+  SELECT driver_name, team_name, final_position, location, circuit_short_name, year, date_start
   FROM ANALYTICS.fct_race_results
-  WHERE final_position = 1
+  WHERE final_position = 1 AND session_name = 'Race'
   ORDER BY date_start DESC
   LIMIT 1
 
 When generating SQL:
-- Always use ANALYTICS schema explicitly (e.g., ANALYTICS.fct_race_results)
-- Join dim_drivers with facts on driver_number
-- For race winners: WHERE final_position = 1
+- ALWAYS use ANALYTICS schema explicitly (e.g., ANALYTICS.fct_race_results)
+- DO NOT join with dim_drivers - all driver info is already in fct_race_results
+- For race winners: WHERE final_position = 1 AND session_name = 'Race'
 - For lap times: filter WHERE lap_duration > 0
 - Lap times are in seconds (convert to minutes:seconds for display)
+- IMPORTANT: fct_race_results already has driver_name and team_name - no need to join
 """
 
 
@@ -71,7 +72,7 @@ def get_openrouter_client():
     )
 
 
-def get_ai_response(user_question: str, model: str = "openai/gpt-3.5-turbo") -> str:
+def get_ai_response(user_question: str, model: str = "openai/gpt-4o-mini") -> str:
     """
     Get AI response using OpenRouter.
 
@@ -105,7 +106,7 @@ def get_ai_response(user_question: str, model: str = "openai/gpt-3.5-turbo") -> 
         return f"Error communicating with AI: {str(e)}"
 
 
-def generate_sql_from_question(user_question: str, model: str = "openai/gpt-3.5-turbo") -> Optional[str]:
+def generate_sql_from_question(user_question: str, model: str = "openai/gpt-4o-mini") -> Optional[str]:
     """
     Generate SQL query from natural language question.
 
@@ -161,7 +162,7 @@ SQL Query:"""
         return None
 
 
-def answer_question_from_data(question: str, results_df: pd.DataFrame, model: str = "openai/gpt-3.5-turbo") -> str:
+def answer_question_from_data(question: str, results_df: pd.DataFrame, model: str = "openai/gpt-4o-mini") -> str:
     """
     Answer user's question in plain English based on query results.
     This is the ONLY function that should be called from app.py for data-based questions.
