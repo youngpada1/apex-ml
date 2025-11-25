@@ -6,7 +6,7 @@ from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
 from dotenv import load_dotenv
-from ai_assistant import get_ai_response, generate_sql_from_question, explain_results
+from ai_assistant import get_ai_response, generate_sql_from_question, answer_question_from_data
 
 # Load environment variables from .env file
 load_dotenv()
@@ -225,33 +225,38 @@ with tab2:
         # Generate AI response
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
+                # Check if user wants visualizations
+                show_chart = any(word in prompt.lower() for word in ["chart", "plot", "graph", "visualize", "show"])
+                show_table = any(word in prompt.lower() for word in ["table", "show data", "raw data"])
+
                 # Check if question requires SQL query
-                if any(keyword in prompt.lower() for keyword in ["who", "what", "which", "how many", "fastest", "slowest", "average"]):
-                    # Try to generate and execute SQL
+                if any(keyword in prompt.lower() for keyword in ["who", "what", "which", "how many", "fastest", "slowest", "average", "last", "latest"]):
+                    # Try to generate and execute SQL behind the scenes
                     sql = generate_sql_from_question(prompt)
 
                     if sql:
-                        st.code(sql, language="sql")
-
                         try:
-                            # Execute the generated SQL
+                            # Execute the generated SQL (silently)
                             result_df = query_snowflake(sql)
 
                             if not result_df.empty:
-                                st.dataframe(result_df, use_container_width=True)
+                                # Get plain English answer from the data
+                                response = answer_question_from_data(prompt, result_df)
 
-                                # Generate insights from results
-                                insights = explain_results(prompt, result_df)
-                                st.markdown(f"**Insights:** {insights}")
+                                # Show table ONLY if explicitly requested
+                                if show_table:
+                                    st.dataframe(result_df, use_container_width=True)
 
-                                response = f"Query executed successfully. See results above."
+                                # Show chart ONLY if explicitly requested
+                                if show_chart and len(result_df.columns) >= 2:
+                                    fig = px.bar(result_df, x=result_df.columns[0], y=result_df.columns[1])
+                                    st.plotly_chart(fig, use_container_width=True)
                             else:
-                                response = "Query returned no results. Try adjusting your question."
+                                response = "I couldn't find any data to answer that question. Try asking something else!"
 
                         except Exception as e:
-                            response = f"Error executing query: {str(e)}\n\nLet me try to answer differently..."
-                            # Fall back to general response
-                            response += "\n\n" + get_ai_response(prompt)
+                            # Fall back to general response on error
+                            response = get_ai_response(prompt)
                     else:
                         response = get_ai_response(prompt)
                 else:

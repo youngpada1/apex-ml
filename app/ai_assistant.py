@@ -1,5 +1,6 @@
-"""AI Assistant powered by local Ollama LLM for F1 data analysis."""
-import ollama
+"""AI Assistant powered by OpenRouter for F1 data analysis."""
+import os
+from openai import OpenAI
 import pandas as pd
 from typing import Optional
 
@@ -63,24 +64,38 @@ When generating SQL:
 """
 
 
-def get_ai_response(user_question: str, model: str = "llama3.1") -> str:
+def get_openrouter_client():
+    """Get OpenRouter client configured to use OpenAI-compatible API."""
+    api_key = os.getenv('OPENROUTER_API_KEY')
+    if not api_key or api_key == 'your_openrouter_api_key_here':
+        raise ValueError("OPENROUTER_API_KEY not set in .env file. Get your key from https://openrouter.ai/keys")
+
+    return OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+    )
+
+
+def get_ai_response(user_question: str, model: str = "openai/gpt-3.5-turbo") -> str:
     """
-    Get AI response using Ollama.
-    
+    Get AI response using OpenRouter.
+
     Args:
         user_question: User's question about F1 data
-        model: Ollama model to use (default: llama3.1)
-    
+        model: Model to use (default: openai/gpt-3.5-turbo for cost efficiency)
+
     Returns:
         AI-generated response
     """
     try:
-        response = ollama.chat(
+        client = get_openrouter_client()
+
+        response = client.chat.completions.create(
             model=model,
             messages=[
                 {
                     "role": "system",
-                    "content": SCHEMA_CONTEXT
+                    "content": "You are a friendly F1 expert talking to a regular fan. Answer questions naturally and conversationally in plain English."
                 },
                 {
                     "role": "user",
@@ -88,21 +103,21 @@ def get_ai_response(user_question: str, model: str = "llama3.1") -> str:
                 }
             ]
         )
-        
-        return response['message']['content']
-        
+
+        return response.choices[0].message.content
+
     except Exception as e:
-        return f"Error communicating with AI: {str(e)}. Make sure Ollama is running (`ollama serve`)."
+        return f"Error communicating with AI: {str(e)}"
 
 
-def generate_sql_from_question(user_question: str, model: str = "llama3.1") -> Optional[str]:
+def generate_sql_from_question(user_question: str, model: str = "openai/gpt-3.5-turbo") -> Optional[str]:
     """
     Generate SQL query from natural language question.
-    
+
     Args:
         user_question: Natural language question
-        model: Ollama model to use
-    
+        model: Model to use
+
     Returns:
         SQL query string or None if couldn't generate
     """
@@ -118,7 +133,9 @@ Return ONLY the SQL query, no explanation. The query should:
 SQL Query:"""
 
     try:
-        response = ollama.chat(
+        client = get_openrouter_client()
+
+        response = client.chat.completions.create(
             model=model,
             messages=[
                 {
@@ -131,9 +148,9 @@ SQL Query:"""
                 }
             ]
         )
-        
-        sql = response['message']['content'].strip()
-        
+
+        sql = response.choices[0].message.content.strip()
+
         # Clean up the SQL (remove markdown code blocks if present)
         if sql.startswith("```sql"):
             sql = sql[6:]
@@ -141,25 +158,26 @@ SQL Query:"""
             sql = sql[3:]
         if sql.endswith("```"):
             sql = sql[:-3]
-        
+
         return sql.strip()
-        
+
     except Exception as e:
         print(f"Error generating SQL: {e}")
         return None
 
 
-def explain_results(question: str, results_df: pd.DataFrame, model: str = "llama3.1") -> str:
+def answer_question_from_data(question: str, results_df: pd.DataFrame, model: str = "openai/gpt-3.5-turbo") -> str:
     """
     Answer user's question in plain English based on query results.
+    This is the ONLY function that should be called from app.py for data-based questions.
 
     Args:
         question: Original question from the user
         results_df: DataFrame with query results
-        model: Ollama model to use
+        model: Model to use
 
     Returns:
-        Plain English answer to the user's question
+        Plain English answer to the user's question (NO SQL, NO technical details)
     """
     # Limit rows for context (send max 10 rows)
     sample_data = results_df.head(10).to_string()
@@ -182,7 +200,9 @@ INSTRUCTIONS:
 Answer:"""
 
     try:
-        response = ollama.chat(
+        client = get_openrouter_client()
+
+        response = client.chat.completions.create(
             model=model,
             messages=[
                 {
@@ -196,7 +216,7 @@ Answer:"""
             ]
         )
 
-        return response['message']['content']
+        return response.choices[0].message.content
 
     except Exception as e:
         return f"Sorry, I couldn't answer that question. {str(e)}"
