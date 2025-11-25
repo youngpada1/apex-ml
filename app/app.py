@@ -6,8 +6,8 @@ from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
 from dotenv import load_dotenv
-from ai_assistant import get_ai_response, generate_sql_from_question, answer_question_from_data
-from ml_predictions import RaceWinnerPredictor, PerformanceAnalyzer, detect_question_type
+from ml.ai_assistant import get_ai_response, generate_sql_from_question, answer_question_from_data
+from ml.ml_predictions import RaceWinnerPredictor, PerformanceAnalyzer, detect_question_type
 
 # Load environment variables from .env file
 load_dotenv()
