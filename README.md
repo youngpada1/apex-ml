@@ -165,9 +165,10 @@ pytest>=8.3.4
 streamlit>=1.40.2
 plotly>=6.5.0
 python-dotenv>=1.2.1
+ollama>=0.6.1
 ```
 
-### All Installed Packages (102 total)
+### All Installed Packages (103 total)
 
 <details>
 <summary>View all packages</summary>
@@ -226,6 +227,7 @@ msgpack                                  1.1.2
 narwhals                                 2.10.2
 networkx                                 3.5
 numpy                                    2.3.4
+ollama                                   0.6.1
 orderly-set                              5.5.0
 packaging                                25.0
 pandas                                   2.3.3
