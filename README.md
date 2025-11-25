@@ -166,9 +166,10 @@ streamlit>=1.40.2
 plotly>=6.5.0
 python-dotenv>=1.2.1
 openai>=1.57.4
+scikit-learn>=1.6.1
 ```
 
-### All Installed Packages (106 total)
+### All Installed Packages (110 total)
 
 <details>
 <summary>View all packages</summary>
@@ -218,6 +219,7 @@ jeepney                                  0.9.0
 jinja2                                   3.1.6
 jiter                                    0.12.0
 jmespath                                 1.0.1
+joblib                                   1.5.2
 jsonschema                               4.25.1
 jsonschema-specifications                2025.9.1
 keyring                                  25.6.0
@@ -259,6 +261,8 @@ referencing                              0.37.0
 requests                                 2.32.5
 rpds-py                                  0.28.0
 s3transfer                               0.14.0
+scikit-learn                             1.7.2
+scipy                                    1.16.3
 secretstorage                            3.4.0
 six                                      1.17.0
 smmap                                    5.0.2
@@ -270,6 +274,7 @@ sqlparse                                 0.5.3
 streamlit                                1.51.0
 tenacity                                 9.1.2
 text-unidecode                           1.3
+threadpoolctl                            3.6.0
 toml                                     0.10.2
 tomlkit                                  0.13.3
 tornado                                  6.5.2
