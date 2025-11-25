@@ -165,10 +165,10 @@ pytest>=8.3.4
 streamlit>=1.40.2
 plotly>=6.5.0
 python-dotenv>=1.2.1
-ollama>=0.6.1
+openai>=1.57.4
 ```
 
-### All Installed Packages (103 total)
+### All Installed Packages (106 total)
 
 <details>
 <summary>View all packages</summary>
@@ -200,6 +200,7 @@ dbt-protos                               1.0.382
 dbt-semantic-interfaces                  0.9.0
 dbt-snowflake                            1.10.2
 deepdiff                                 8.6.1
+distro                                   1.9.0
 filelock                                 3.20.0
 gitdb                                    4.0.12
 gitpython                                3.1.45
@@ -215,6 +216,7 @@ jaraco-context                           6.0.1
 jaraco-functools                         4.3.0
 jeepney                                  0.9.0
 jinja2                                   3.1.6
+jiter                                    0.12.0
 jmespath                                 1.0.1
 jsonschema                               4.25.1
 jsonschema-specifications                2025.9.1
@@ -227,7 +229,7 @@ msgpack                                  1.1.2
 narwhals                                 2.10.2
 networkx                                 3.5
 numpy                                    2.3.4
-ollama                                   0.6.1
+openai                                   2.8.1
 orderly-set                              5.5.0
 packaging                                25.0
 pandas                                   2.3.3
@@ -271,6 +273,7 @@ text-unidecode                           1.3
 toml                                     0.10.2
 tomlkit                                  0.13.3
 tornado                                  6.5.2
+tqdm                                     4.67.1
 typing-extensions                        4.15.0
 typing-inspection                        0.4.2
 tzdata                                   2025.2
