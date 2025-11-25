@@ -9,6 +9,7 @@ SCHEMA_CONTEXT = """
 You are an F1 data analyst assistant with access to a Snowflake database.
 
 Available tables in ANALYTICS schema:
+
 1. dim_drivers - Driver dimension table
    - driver_number (int)
    - full_name (string)
@@ -17,50 +18,44 @@ Available tables in ANALYTICS schema:
    - team_colour (string)
    - country_code (string)
 
-2. dim_sessions - Session dimension table
-   - session_key (int) - Primary key
-   - session_name (string) - e.g., "Race", "Qualifying", "Sprint"
-   - session_type (string) - Session category
-   - year (int)
-   - date_start (timestamp) - Actual race/session date
-   - date_end (timestamp)
-   - location (string)
-   - country_name (string)
-   - circuit_short_name (string)
-
-3. fct_lap_times - Lap times fact table
+2. fct_lap_times - Lap times fact table
    - session_key (int)
    - driver_number (int)
    - lap_number (int)
    - lap_duration (float) - in seconds
    - segment_1_duration, segment_2_duration, segment_3_duration (float)
    - is_pit_out_lap (boolean)
-   - date_start (timestamp)
+   - date_start (timestamp) - ACTUAL race date (use this for "latest/last race")
 
-4. fct_race_results - Race results fact table
+3. fct_race_results - Race results fact table (ONLY for Race sessions)
    - session_key (int)
    - driver_number (int)
-   - position (int)
-   - final_position (int)
-   - points (int)
-   - status (string)
+   - driver_name (string) - Full driver name
+   - team_name (string)
+   - final_position (int) - Final position in race (1 = winner, 2 = 2nd place, etc.)
+   - session_name (string) - e.g., "Race"
+   - circuit_short_name (string)
+   - location (string)
+   - year (int)
+   - date_start (timestamp) - ACTUAL race date (use this for "latest/last race")
 
-IMPORTANT - Understanding "Latest/Last/Most Recent" Sessions:
-- When user asks about "last race", "latest session", "most recent race", etc.
-- Use MAX(date_start) from dim_sessions WHERE session_type = 'Race'
-- DO NOT use ingested_at or any data load timestamps
-- The "latest race" is based on the ACTUAL race date (date_start), not when data was loaded
+CRITICAL - Understanding "Latest/Last/Most Recent" Race:
+- When user asks about "last race", "latest race", "most recent race"
+- Use the race with MAX(date_start) from fct_race_results (NOT from ingested_at!)
+- Example query for "who won the last race":
+
+  SELECT driver_name, team_name, final_position, location, circuit_short_name, year
+  FROM ANALYTICS.fct_race_results
+  WHERE final_position = 1
+  ORDER BY date_start DESC
+  LIMIT 1
 
 When generating SQL:
-- Always use ANALYTICS schema
-- Table names: dim_drivers, dim_sessions, fct_lap_times, fct_race_results
-- Join on driver_number and session_key
-- ALWAYS JOIN with dim_sessions to get session names, dates, locations
-- For "latest/last/most recent race" queries:
-  - First find: SELECT session_key FROM dim_sessions WHERE session_type = 'Race' ORDER BY date_start DESC LIMIT 1
-  - Then use that session_key in your main query
-- Lap times are in seconds (divide by 60 for minutes)
-- Filter out invalid laps: WHERE lap_duration > 0
+- Always use ANALYTICS schema explicitly (e.g., ANALYTICS.fct_race_results)
+- Join dim_drivers with facts on driver_number
+- For race winners: WHERE final_position = 1
+- For lap times: filter WHERE lap_duration > 0
+- Lap times are in seconds (convert to minutes:seconds for display)
 """
 
 
@@ -189,13 +184,19 @@ User's question: "{question}"
 Data from the database:
 {sample_data}
 
-INSTRUCTIONS:
-- Answer the question directly in 1-3 clear sentences
+CRITICAL INSTRUCTIONS:
+- Answer the question directly in 2-4 sentences
+- ALWAYS include the actual numbers, times, positions, and data from the results
 - Use plain, conversational English
 - NEVER mention SQL, queries, databases, or technical terms
 - NEVER show or mention code
-- Just answer what they asked as if you're having a normal conversation
+- NO fluff words like "amazing", "exciting", "impressive" - just state the facts and data
 - If there are lap times in seconds, convert to minutes:seconds format (e.g., 92.5 seconds = 1:32.5)
+- Be specific: include driver names, exact lap times, positions, points, team names, etc.
+- Don't make assumptions - only use the data provided
+
+Example good answer: "Max Verstappen won the race with a time of 1:32:15.123. He finished 5.2 seconds ahead of Lewis Hamilton who came in 2nd place."
+Example bad answer: "Max Verstappen had an amazing performance and dominated the race!" (no data, just opinion)
 
 Answer:"""
 
@@ -207,7 +208,7 @@ Answer:"""
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a friendly F1 expert talking to a regular fan. Never use technical jargon or mention databases/SQL. Answer questions naturally and conversationally."
+                    "content": "You are a factual F1 data reporter. Always cite specific numbers, times, and data from the results. Never add subjective opinions or excitement. Just report the facts clearly and directly."
                 },
                 {
                     "role": "user",

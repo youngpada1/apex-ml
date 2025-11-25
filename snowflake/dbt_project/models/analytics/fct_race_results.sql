@@ -22,6 +22,7 @@ final_positions AS (
         s.circuit_short_name,
         s.location,
         s.year,
+        s.date_start,
         d.full_name AS driver_name,
         d.team_name
     FROM positions p
@@ -44,6 +45,7 @@ SELECT
     circuit_short_name,
     location,
     year,
+    date_start,
     CURRENT_TIMESTAMP() AS updated_at
 FROM final_positions
 ORDER BY session_key, final_position
