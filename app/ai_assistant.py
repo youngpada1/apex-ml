@@ -2,47 +2,84 @@
 import os
 from openai import OpenAI
 import pandas as pd
+import snowflake.connector
+from pathlib import Path
 from typing import Optional
+from functools import lru_cache
 
-# Database schema information for context
-SCHEMA_CONTEXT = """
-You are an F1 data analyst assistant with access to a Snowflake database.
 
-Available tables in ANALYTICS schema:
+def get_snowflake_connection():
+    """Get Snowflake connection for schema introspection."""
+    account = os.getenv('SNOWFLAKE_ACCOUNT')
+    user = os.getenv('SNOWFLAKE_USER')
 
-1. dim_drivers - Driver dimension table
-   - driver_number (int)
-   - full_name (string)
-   - name_acronym (string)
-   - team_name (string)
-   - team_colour (string)
-   - country_code (string)
+    if not account:
+        raise ValueError("SNOWFLAKE_ACCOUNT environment variable is not set")
+    if not user:
+        raise ValueError("SNOWFLAKE_USER environment variable is not set")
 
-2. fct_lap_times - Lap times fact table
-   - session_key (int)
-   - driver_number (int)
-   - lap_number (int)
-   - lap_duration (float) - in seconds
-   - segment_1_duration, segment_2_duration, segment_3_duration (float)
-   - is_pit_out_lap (boolean)
-   - date_start (timestamp) - ACTUAL race date (use this for "latest/last race")
+    return snowflake.connector.connect(
+        user=user,
+        account=account,
+        authenticator='SNOWFLAKE_JWT',
+        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
+        warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
+        database=os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV'),
+        schema='ANALYTICS',
+        role=os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN')
+    )
 
-3. fct_race_results - Race results fact table (ONLY for Race sessions)
-   - session_key (int)
-   - driver_number (int)
-   - driver_name (string) - Full driver name
-   - team_name (string)
-   - final_position (int) - Final position in race (1 = winner, 2 = 2nd place, etc.)
-   - session_name (string) - e.g., "Race"
-   - circuit_short_name (string)
-   - location (string)
-   - year (int)
-   - date_start (timestamp) - ACTUAL race date (use this for "latest/last race")
 
+@lru_cache(maxsize=1)
+def get_dynamic_schema_context() -> str:
+    """
+    Dynamically fetch schema from Snowflake and build context for LLM.
+    This ensures the AI always has up-to-date schema information.
+
+    Cached to avoid repeated database queries (cache invalidates on app restart).
+    """
+    try:
+        conn = get_snowflake_connection()
+        cursor = conn.cursor()
+
+        # Query to get all tables and columns in ANALYTICS schema
+        query = """
+        SELECT
+            table_name,
+            column_name,
+            data_type,
+            ordinal_position
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_schema = 'ANALYTICS'
+        ORDER BY table_name, ordinal_position
+        """
+
+        cursor.execute(query)
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        # Build schema context from results
+        schema_by_table = {}
+        for table_name, column_name, data_type, _ in results:
+            if table_name not in schema_by_table:
+                schema_by_table[table_name] = []
+            schema_by_table[table_name].append(f"   - {column_name.lower()} ({data_type.lower()})")
+
+        # Build formatted schema text
+        schema_text = "You are an F1 data analyst assistant with access to a Snowflake database.\n\n"
+        schema_text += "Available tables in ANALYTICS schema:\n\n"
+
+        for i, (table_name, columns) in enumerate(schema_by_table.items(), 1):
+            schema_text += f"{i}. {table_name.lower()}\n"
+            schema_text += "\n".join(columns) + "\n\n"
+
+        # Add domain-specific instructions
+        schema_text += """
 CRITICAL - Understanding "Latest/Last/Most Recent" Race:
 - When user asks about "last race", "latest race", "most recent race"
 - Use the race with MAX(date_start) from fct_race_results (NOT from ingested_at!)
-- Example query for "who won the last race" (COPY THIS EXACTLY):
+- Example query for "who won the last race":
 
   SELECT driver_name, team_name, final_position, location, circuit_short_name, year, date_start
   FROM ANALYTICS.fct_race_results
@@ -56,8 +93,20 @@ When generating SQL:
 - For race winners: WHERE final_position = 1 AND session_name = 'Race'
 - For lap times: filter WHERE lap_duration > 0
 - Lap times are in seconds (convert to minutes:seconds for display)
-- IMPORTANT: fct_race_results already has driver_name and team_name - no need to join
+
+CRITICAL - Which table to use:
+- Questions about "how many drivers" or "list all drivers" → USE dim_drivers (complete list of all drivers)
+- Questions about race results, positions, winners → USE fct_race_results
+- Questions about lap times, fastest laps, sectors → USE fct_lap_times
+- DO NOT count drivers from fct_lap_times or fct_race_results - use dim_drivers for driver counts!
 """
+
+        return schema_text
+
+    except Exception as e:
+        print(f"Error fetching dynamic schema: {e}")
+        # Fallback to basic schema if introspection fails
+        return "You are an F1 data analyst assistant. Generate SQL queries for the ANALYTICS schema."
 
 
 def get_openrouter_client():
@@ -117,6 +166,9 @@ def generate_sql_from_question(user_question: str, model: str = "openai/gpt-4o-m
     Returns:
         SQL query string or None if couldn't generate
     """
+    # Get dynamic schema context from Snowflake
+    schema_context = get_dynamic_schema_context()
+
     prompt = f"""Generate a Snowflake SQL query to answer this question: "{user_question}"
 
 Return ONLY the SQL query, no explanation. The query should:
@@ -136,7 +188,7 @@ SQL Query:"""
             messages=[
                 {
                     "role": "system",
-                    "content": SCHEMA_CONTEXT
+                    "content": schema_context
                 },
                 {
                     "role": "user",
