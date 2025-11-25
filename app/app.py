@@ -28,7 +28,7 @@ def get_snowflake_connection():
         user=user,
         account=account,
         authenticator='SNOWFLAKE_JWT',
-ql queries from questions        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
+        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
         warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
         database=os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV'),
         schema=os.getenv('SNOWFLAKE_SCHEMA', 'ANALYTICS'),
@@ -225,39 +225,33 @@ with tab2:
         # Generate AI response
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                # Check if user wants visualizations
-                show_chart = any(word in prompt.lower() for word in ["chart", "plot", "graph", "visualize", "show me"])
-                show_table = any(word in prompt.lower() for word in ["table", "show data", "raw data"])
-
                 # Check if question requires SQL query
                 if any(keyword in prompt.lower() for keyword in ["who", "what", "which", "how many", "fastest", "slowest", "average"]):
                     # Try to generate and execute SQL
                     sql = generate_sql_from_question(prompt)
 
                     if sql:
+                        st.code(sql, language="sql")
+
                         try:
                             # Execute the generated SQL
                             result_df = query_snowflake(sql)
 
                             if not result_df.empty:
+                                st.dataframe(result_df, use_container_width=True)
+
                                 # Generate insights from results
                                 insights = explain_results(prompt, result_df)
-                                response = insights
+                                st.markdown(f"**Insights:** {insights}")
 
-                                # Show table if requested
-                                if show_table:
-                                    st.dataframe(result_df, use_container_width=True)
-
-                                # Show chart if requested
-                                if show_chart and len(result_df.columns) >= 2:
-                                    fig = px.bar(result_df, x=result_df.columns[0], y=result_df.columns[1])
-                                    st.plotly_chart(fig, use_container_width=True)
+                                response = f"Query executed successfully. See results above."
                             else:
-                                response = "I couldn't find any data matching your question. Try asking something else!"
+                                response = "Query returned no results. Try adjusting your question."
 
                         except Exception as e:
-                            # Fall back to general response on error
-                            response = get_ai_response(prompt)
+                            response = f"Error executing query: {str(e)}\n\nLet me try to answer differently..."
+                            # Fall back to general response
+                            response += "\n\n" + get_ai_response(prompt)
                     else:
                         response = get_ai_response(prompt)
                 else:
