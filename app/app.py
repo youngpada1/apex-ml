@@ -6,6 +6,7 @@ from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
 from dotenv import load_dotenv
+from ai_assistant import get_ai_response, generate_sql_from_question, explain_results
 
 # Load environment variables from .env file
 load_dotenv()
@@ -27,7 +28,7 @@ def get_snowflake_connection():
         user=user,
         account=account,
         authenticator='SNOWFLAKE_JWT',
-        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
+ql queries from questions        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
         warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
         database=os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV'),
         schema=os.getenv('SNOWFLAKE_SCHEMA', 'ANALYTICS'),
@@ -221,16 +222,50 @@ with tab2:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Generate response (placeholder for now - will integrate LLM next)
+        # Generate AI response
         with st.chat_message("assistant"):
-            response = "🤖 AI Assistant coming soon! I'll be able to:\n\n"
-            response += "- Answer questions about driver performance\n"
-            response += "- Generate custom charts and visualizations\n"
-            response += "- Predict race outcomes using ML models\n"
-            response += "- Provide insights from historical data\n\n"
-            response += "For now, use the Custom Analysis tab to explore the data!"
-            st.markdown(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
+            with st.spinner("Thinking..."):
+                # Check if user wants visualizations
+                show_chart = any(word in prompt.lower() for word in ["chart", "plot", "graph", "visualize", "show me"])
+                show_table = any(word in prompt.lower() for word in ["table", "show data", "raw data"])
+
+                # Check if question requires SQL query
+                if any(keyword in prompt.lower() for keyword in ["who", "what", "which", "how many", "fastest", "slowest", "average"]):
+                    # Try to generate and execute SQL
+                    sql = generate_sql_from_question(prompt)
+
+                    if sql:
+                        try:
+                            # Execute the generated SQL
+                            result_df = query_snowflake(sql)
+
+                            if not result_df.empty:
+                                # Generate insights from results
+                                insights = explain_results(prompt, result_df)
+                                response = insights
+
+                                # Show table if requested
+                                if show_table:
+                                    st.dataframe(result_df, use_container_width=True)
+
+                                # Show chart if requested
+                                if show_chart and len(result_df.columns) >= 2:
+                                    fig = px.bar(result_df, x=result_df.columns[0], y=result_df.columns[1])
+                                    st.plotly_chart(fig, use_container_width=True)
+                            else:
+                                response = "I couldn't find any data matching your question. Try asking something else!"
+
+                        except Exception as e:
+                            # Fall back to general response on error
+                            response = get_ai_response(prompt)
+                    else:
+                        response = get_ai_response(prompt)
+                else:
+                    # General question - get direct AI response
+                    response = get_ai_response(prompt)
+
+                st.markdown(response)
+                st.session_state.messages.append({"role": "assistant", "content": response})
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(f"**Data Source:** {os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV')}.{os.getenv('SNOWFLAKE_SCHEMA', 'ANALYTICS')}")
