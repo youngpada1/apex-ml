@@ -48,37 +48,37 @@ def get_loaded_session_keys():
 
 async def load_historical_data():
     """Load all historical race data that hasn't been loaded yet."""
-    print("="*80)
-    print("HISTORICAL F1 DATA LOAD")
-    print(f"Started at: {datetime.utcnow().isoformat()}")
-    print("="*80)
+    print("="*80, flush=True)
+    print("HISTORICAL F1 DATA LOAD", flush=True)
+    print(f"Started at: {datetime.now().isoformat()}", flush=True)
+    print("="*80, flush=True)
 
     # Get all race sessions from API
-    print("\n[1/3] Fetching all race sessions from OpenF1 API...")
+    print("\n[1/3] Fetching all race sessions from OpenF1 API...", flush=True)
     all_sessions = await get_all_race_sessions()
-    print(f"Found {len(all_sessions)} total race sessions")
+    print(f"Found {len(all_sessions)} total race sessions", flush=True)
 
     # Get already loaded sessions
-    print("\n[2/3] Checking what's already loaded in Snowflake...")
+    print("\n[2/3] Checking what's already loaded in Snowflake...", flush=True)
     loaded_keys = get_loaded_session_keys()
-    print(f"Already loaded: {len(loaded_keys)} sessions")
+    print(f"Already loaded: {len(loaded_keys)} sessions", flush=True)
 
     # Filter to only new sessions
     new_sessions = [s for s in all_sessions if s['session_key'] not in loaded_keys]
-    print(f"New sessions to load: {len(new_sessions)}")
+    print(f"New sessions to load: {len(new_sessions)}", flush=True)
 
     if not new_sessions:
-        print("\nAll sessions already loaded. Nothing to do.")
+        print("\nAll sessions already loaded. Nothing to do.", flush=True)
         return
 
     # Load each new session
-    print("\n[3/3] Loading new sessions...")
+    print("\n[3/3] Loading new sessions...", flush=True)
     for i, session in enumerate(new_sessions, 1):
         session_key = session['session_key']
         session_name = session.get('session_name', 'Unknown')
         year = session.get('year', 'Unknown')
 
-        print(f"\n[{i}/{len(new_sessions)}] Loading session {session_key}: {session_name} ({year})")
+        print(f"\n[{i}/{len(new_sessions)}] Loading session {session_key}: {session_name} ({year})", flush=True)
 
         try:
             # Extract data for this session
@@ -88,16 +88,16 @@ async def load_historical_data():
             load_all(data)
 
             print(f"  ✓ Loaded: {len(data['sessions'])} sessions, {len(data['drivers'])} drivers, "
-                  f"{len(data['laps'])} laps, {len(data['positions'])} positions")
+                  f"{len(data['laps'])} laps, {len(data['positions'])} positions", flush=True)
 
         except Exception as e:
-            print(f"  ✗ ERROR loading session {session_key}: {e}")
+            print(f"  ✗ ERROR loading session {session_key}: {e}", flush=True)
             continue
 
-    print("\n" + "="*80)
-    print("HISTORICAL DATA LOAD COMPLETED")
-    print(f"Finished at: {datetime.utcnow().isoformat()}")
-    print("="*80)
+    print("\n" + "="*80, flush=True)
+    print("HISTORICAL DATA LOAD COMPLETED", flush=True)
+    print(f"Finished at: {datetime.now().isoformat()}", flush=True)
+    print("="*80, flush=True)
 
 
 if __name__ == "__main__":
