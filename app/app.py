@@ -43,27 +43,6 @@ def query_snowflake(query):
 st.title("🏁 ApexML – F1 Race Analytics")
 st.markdown("Real-time F1 data analytics powered by Snowflake, dbt, and OpenF1 API")
 
-# Sidebar
-st.sidebar.header("Filters")
-
-# Get available drivers
-try:
-    drivers_query = """
-    SELECT DISTINCT driver_number, full_name, team_name
-    FROM dim_drivers
-    ORDER BY full_name
-    """
-    drivers_df = query_snowflake(drivers_query)
-
-    selected_driver = st.sidebar.selectbox(
-        "Select Driver",
-        options=["All"] + drivers_df['FULL_NAME'].tolist()
-    )
-except Exception as e:
-    st.sidebar.error(f"Error loading drivers: {e}")
-    drivers_df = pd.DataFrame()
-    selected_driver = "All"
-
 # Main Dashboard
 tab1, tab2 = st.tabs(["🔧 Custom Analysis", "💬 AI Assistant"])
 
@@ -100,6 +79,46 @@ with tab1:
             ],
             default=["Driver"]
         )
+
+    # Filters section - load available drivers and teams
+    try:
+        drivers_teams_query = """
+        SELECT DISTINCT driver_number, full_name, team_name
+        FROM dim_drivers
+        ORDER BY full_name
+        """
+        drivers_df = query_snowflake(drivers_teams_query)
+        available_drivers = drivers_df['FULL_NAME'].tolist()
+        available_teams = sorted(drivers_df['TEAM_NAME'].unique().tolist())
+    except Exception as e:
+        st.error(f"Error loading drivers/teams: {e}")
+        available_drivers = []
+        available_teams = []
+
+    st.subheader("Filters")
+    filter_col1, filter_col2 = st.columns(2)
+
+    with filter_col1:
+        # Show driver filter only if Driver dimension is selected
+        if "Driver" in dimensions:
+            selected_driver = st.selectbox(
+                "Filter by Driver",
+                options=["All"] + available_drivers,
+                key="driver_filter"
+            )
+        else:
+            selected_driver = "All"
+
+    with filter_col2:
+        # Show team filter only if Team dimension is selected
+        if "Team" in dimensions:
+            selected_team = st.selectbox(
+                "Filter by Team",
+                options=["All"] + available_teams,
+                key="team_filter"
+            )
+        else:
+            selected_team = "All"
 
     st.subheader("Visualization Type")
     viz_type = st.selectbox(
@@ -141,6 +160,13 @@ with tab1:
                     dim_sql.append("l.session_key as session")
                     group_by.append("l.session_key")
 
+                # Build WHERE clause with filters
+                where_conditions = ["l.lap_duration > 0"]
+                if selected_driver != "All":
+                    where_conditions.append(f"d.full_name = '{selected_driver}'")
+                if selected_team != "All":
+                    where_conditions.append(f"d.team_name = '{selected_team}'")
+
                 query = f"""
                 SELECT
                     {', '.join(dim_sql)},
@@ -148,7 +174,7 @@ with tab1:
                 FROM fct_lap_times l
                 JOIN dim_drivers d ON l.driver_number = d.driver_number
                 LEFT JOIN fct_race_results r ON l.driver_number = r.driver_number AND l.session_key = r.session_key
-                WHERE l.lap_duration > 0
+                WHERE {' AND '.join(where_conditions)}
                 GROUP BY {', '.join(group_by)}
                 ORDER BY {metric_sql[0].split(' as ')[1]}
                 LIMIT 20

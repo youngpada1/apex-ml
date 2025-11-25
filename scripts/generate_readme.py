@@ -81,27 +81,46 @@ ApexML is a comprehensive data engineering platform that:
 │              MODERN DATA ENGINEERING ARCHITECTURE (ELT)              │
 └─────────────────────────────────────────────────────────────────────┘
 
-1️⃣ DATA INGESTION (Extract & Load)
+1️⃣ EXTRACT & LOAD (Data Ingestion)
+
+   AUTOMATED PIPELINE (Snowflake Task):
+   ┌────────────────────────────────────────────────┐
+   │  ⏰ Snowflake TASK (scheduled every 6 hours)   │
+   │           ↓ executes                           │
+   │  🐍 Python Stored Procedure                    │
+   │     • Calls OpenF1 API for new race data      │
+   │     • Queries RAW.SESSIONS for existing data   │
+   │     • Loads ONLY new sessions (incremental)    │
+   │     • Uses MERGE statements (no duplicates)    │
+   │     • Triggers dbt transformations             │
+   └────────────────────────────────────────────────┘
+
+   MANUAL PIPELINE (for historical/adhoc loads):
    ┌──────────────┐
    │  OpenF1 API  │  ← Real-time F1 data (REST API)
    └──────┬───────┘
           │
-          ↓ httpx
-   ┌──────────────┐
-   │ extract.py   │  ← Python ELT script
-   │ load.py      │  ← Loads to Snowflake RAW schema
-   └──────┬───────┘
+          ↓ httpx (async HTTP client)
+   ┌──────────────────────────┐
+   │  Python Scripts:         │
+   │  • extract.py            │  ← Async extraction
+   │  • load.py               │  ← MERGE statements
+   │  • load_historical.py    │  ← Bulk historical load
+   └──────┬───────────────────┘
           │
-          ↓
+          ↓ Loads raw data (no transformation)
+
 2️⃣ DATA WAREHOUSE (Snowflake)
    ┌────────────────────────────────────────┐
    │         APEXML_DEV Database            │
    ├────────────────────────────────────────┤
-   │  📁 RAW Schema                         │
-   │    • sessions   (raw API data)         │
-   │    • drivers    (raw API data)         │
-   │    • positions  (raw API data)         │
-   │    • laps       (raw API data)         │
+   │  📁 RAW Schema (tables)                │
+   │    • SESSIONS   (raw API data)         │
+   │    • DRIVERS    (raw API data)         │
+   │    • LAPS       (raw API data)         │
+   │    • POSITIONS  (raw API data)         │
+   │                                         │
+   │    Primary Keys enforced on all tables │
    ├────────────────────────────────────────┤
    │           ↓ dbt transformations        │
    ├────────────────────────────────────────┤
@@ -120,28 +139,53 @@ ApexML is a comprehensive data engineering platform that:
    └────────┬───────────────────────────────┘
             │
             ↓
-3️⃣ TRANSFORMATION (dbt)
-   ┌──────────────┐
-   │  dbt Core    │  ← SQL-based transformations
-   │              │  ← Data quality tests (22 passing)
-   │  • Models    │  ← RAW → STAGING → ANALYTICS
-   │  • Tests     │  ← not_null, unique, custom
-   └──────┬───────┘
+
+3️⃣ TRANSFORM (dbt - runs INSIDE Snowflake)
+   ┌──────────────────────────────────┐
+   │  dbt Core                        │
+   │  • SQL-based transformations     │
+   │  • Models: RAW → STAGING → ANALYTICS
+   │  • Data quality tests (22 passing)
+   │  • Materializations:             │
+   │    - STAGING: views (fast)       │
+   │    - ANALYTICS: tables (queryable)
+   └──────┬───────────────────────────┘
           │
           ↓
+
 4️⃣ VISUALIZATION
-   ┌──────────────┐
-   │  Streamlit   │  ← Interactive dashboard
-   │  Dashboard   │  ← Queries ANALYTICS schema
-   └──────────────┘
+   ┌──────────────────────────────────┐
+   │  Streamlit Dashboard             │
+   │  • Custom Analysis Builder       │
+   │    - Metrics selector            │
+   │    - Dimensions selector         │
+   │    - Filters: Driver, Team, Session
+   │  • AI Assistant (coming soon)    │
+   │  • Interactive charts (Plotly)   │
+   └──────────────────────────────────┘
           │
           ↓
+
 5️⃣ INFRASTRUCTURE
-   ┌──────────────┐
-   │  Terraform   │  ← Infrastructure as Code (IaC)
-   │              │  ← Snowflake resources
-   │              │  ← Multi-environment (dev/staging/prod)
-   └──────────────┘
+   ┌──────────────────────────────────┐
+   │  Terraform (IaC)                 │
+   │  • Snowflake resources:          │
+   │    - Databases (dev/staging/prod)│
+   │    - Schemas (RAW/STAGING/ANALYTICS)
+   │    - Tables with PK constraints  │
+   │    - Warehouses                  │
+   │    - Roles & Grants              │
+   │  • State: S3 backend + DynamoDB  │
+   │  • CI/CD: GitHub Actions         │
+   └──────────────────────────────────┘
+
+KEY FEATURES:
+✓ Incremental loading - only new sessions loaded
+✓ No duplicates - MERGE statements on all tables
+✓ Fully automated - Snowflake Task scheduled every 6 hours
+✓ Self-healing - checks existing data before loading
+✓ Manual override - load_historical.py for bulk loads
+✓ ELT pattern - transform AFTER loading into warehouse
 ```
 
 ---

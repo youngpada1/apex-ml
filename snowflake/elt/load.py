@@ -28,14 +28,39 @@ def load_sessions(conn, sessions: list[dict[str, Any]]) -> int:
     for session in sessions:
         cursor.execute(
             """
-            INSERT INTO APEXML_DEV.RAW.SESSIONS (
-                session_key, session_name, session_type, date_start, date_end,
-                gmt_offset, location, country_name, circuit_short_name, year, ingested_at
-            ) VALUES (
-                %(session_key)s, %(session_name)s, %(session_type)s, %(date_start)s,
-                %(date_end)s, %(gmt_offset)s, %(location)s, %(country_name)s,
-                %(circuit_short_name)s, %(year)s, %(ingested_at)s
-            )
+            MERGE INTO APEXML_DEV.RAW.SESSIONS AS target
+            USING (SELECT
+                %(session_key)s AS session_key,
+                %(session_name)s AS session_name,
+                %(session_type)s AS session_type,
+                %(date_start)s AS date_start,
+                %(date_end)s AS date_end,
+                %(gmt_offset)s AS gmt_offset,
+                %(location)s AS location,
+                %(country_name)s AS country_name,
+                %(circuit_short_name)s AS circuit_short_name,
+                %(year)s AS year,
+                %(ingested_at)s AS ingested_at
+            ) AS source
+            ON target.session_key = source.session_key
+            WHEN MATCHED THEN
+                UPDATE SET
+                    session_name = source.session_name,
+                    session_type = source.session_type,
+                    date_start = source.date_start,
+                    date_end = source.date_end,
+                    gmt_offset = source.gmt_offset,
+                    location = source.location,
+                    country_name = source.country_name,
+                    circuit_short_name = source.circuit_short_name,
+                    year = source.year,
+                    ingested_at = source.ingested_at
+            WHEN NOT MATCHED THEN
+                INSERT (session_key, session_name, session_type, date_start, date_end,
+                        gmt_offset, location, country_name, circuit_short_name, year, ingested_at)
+                VALUES (source.session_key, source.session_name, source.session_type,
+                        source.date_start, source.date_end, source.gmt_offset, source.location,
+                        source.country_name, source.circuit_short_name, source.year, source.ingested_at)
             """,
             session,
         )
@@ -53,14 +78,36 @@ def load_drivers(conn, drivers: list[dict[str, Any]]) -> int:
     for driver in drivers:
         cursor.execute(
             """
-            INSERT INTO APEXML_DEV.RAW.DRIVERS (
-                driver_number, session_key, broadcast_name, full_name, name_acronym,
-                team_name, team_colour, headshot_url, country_code, ingested_at
-            ) VALUES (
-                %(driver_number)s, %(session_key)s, %(broadcast_name)s, %(full_name)s,
-                %(name_acronym)s, %(team_name)s, %(team_colour)s, %(headshot_url)s,
-                %(country_code)s, %(ingested_at)s
-            )
+            MERGE INTO APEXML_DEV.RAW.DRIVERS AS target
+            USING (SELECT
+                %(driver_number)s AS driver_number,
+                %(session_key)s AS session_key,
+                %(broadcast_name)s AS broadcast_name,
+                %(full_name)s AS full_name,
+                %(name_acronym)s AS name_acronym,
+                %(team_name)s AS team_name,
+                %(team_colour)s AS team_colour,
+                %(headshot_url)s AS headshot_url,
+                %(country_code)s AS country_code,
+                %(ingested_at)s AS ingested_at
+            ) AS source
+            ON target.driver_number = source.driver_number AND target.session_key = source.session_key
+            WHEN MATCHED THEN
+                UPDATE SET
+                    broadcast_name = source.broadcast_name,
+                    full_name = source.full_name,
+                    name_acronym = source.name_acronym,
+                    team_name = source.team_name,
+                    team_colour = source.team_colour,
+                    headshot_url = source.headshot_url,
+                    country_code = source.country_code,
+                    ingested_at = source.ingested_at
+            WHEN NOT MATCHED THEN
+                INSERT (driver_number, session_key, broadcast_name, full_name, name_acronym,
+                        team_name, team_colour, headshot_url, country_code, ingested_at)
+                VALUES (source.driver_number, source.session_key, source.broadcast_name, source.full_name,
+                        source.name_acronym, source.team_name, source.team_colour, source.headshot_url,
+                        source.country_code, source.ingested_at)
             """,
             driver,
         )
@@ -76,30 +123,54 @@ def load_laps(conn, laps: list[dict[str, Any]]) -> int:
     count = 0
 
     for lap in laps:
+        lap_params = {
+            "session_key": lap.get("session_key"),
+            "driver_number": lap.get("driver_number"),
+            "lap_number": lap.get("lap_number"),
+            "lap_duration": lap.get("lap_duration"),
+            "duration_sector_1": lap.get("duration_sector_1"),
+            "duration_sector_2": lap.get("duration_sector_2"),
+            "duration_sector_3": lap.get("duration_sector_3"),
+            "is_pit_out_lap": lap.get("is_pit_out_lap"),
+            "date_start": lap.get("date_start"),
+            "ingested_at": lap.get("ingested_at"),
+        }
         cursor.execute(
             """
-            INSERT INTO APEXML_DEV.RAW.LAPS (
-                session_key, driver_number, lap_number, lap_duration,
-                segment_1_duration, segment_2_duration, segment_3_duration,
-                is_pit_out_lap, date_start, ingested_at
-            ) VALUES (
-                %(session_key)s, %(driver_number)s, %(lap_number)s, %(lap_duration)s,
-                %(duration_sector_1)s, %(duration_sector_2)s, %(duration_sector_3)s,
-                %(is_pit_out_lap)s, %(date_start)s, %(ingested_at)s
-            )
+            MERGE INTO APEXML_DEV.RAW.LAPS AS target
+            USING (SELECT
+                %(session_key)s AS session_key,
+                %(driver_number)s AS driver_number,
+                %(lap_number)s AS lap_number,
+                %(lap_duration)s AS lap_duration,
+                %(duration_sector_1)s AS segment_1_duration,
+                %(duration_sector_2)s AS segment_2_duration,
+                %(duration_sector_3)s AS segment_3_duration,
+                %(is_pit_out_lap)s AS is_pit_out_lap,
+                %(date_start)s AS date_start,
+                %(ingested_at)s AS ingested_at
+            ) AS source
+            ON target.session_key = source.session_key
+                AND target.driver_number = source.driver_number
+                AND target.lap_number = source.lap_number
+            WHEN MATCHED THEN
+                UPDATE SET
+                    lap_duration = source.lap_duration,
+                    segment_1_duration = source.segment_1_duration,
+                    segment_2_duration = source.segment_2_duration,
+                    segment_3_duration = source.segment_3_duration,
+                    is_pit_out_lap = source.is_pit_out_lap,
+                    date_start = source.date_start,
+                    ingested_at = source.ingested_at
+            WHEN NOT MATCHED THEN
+                INSERT (session_key, driver_number, lap_number, lap_duration,
+                        segment_1_duration, segment_2_duration, segment_3_duration,
+                        is_pit_out_lap, date_start, ingested_at)
+                VALUES (source.session_key, source.driver_number, source.lap_number, source.lap_duration,
+                        source.segment_1_duration, source.segment_2_duration, source.segment_3_duration,
+                        source.is_pit_out_lap, source.date_start, source.ingested_at)
             """,
-            {
-                "session_key": lap.get("session_key"),
-                "driver_number": lap.get("driver_number"),
-                "lap_number": lap.get("lap_number"),
-                "lap_duration": lap.get("lap_duration"),
-                "duration_sector_1": lap.get("duration_sector_1"),
-                "duration_sector_2": lap.get("duration_sector_2"),
-                "duration_sector_3": lap.get("duration_sector_3"),
-                "is_pit_out_lap": lap.get("is_pit_out_lap"),
-                "date_start": lap.get("date_start"),
-                "ingested_at": lap.get("ingested_at"),
-            },
+            lap_params,
         )
         count += 1
 
@@ -113,21 +184,35 @@ def load_positions(conn, positions: list[dict[str, Any]]) -> int:
     count = 0
 
     for position in positions:
+        position_params = {
+            "session_key": position.get("session_key"),
+            "driver_number": position.get("driver_number"),
+            "date": position.get("date"),
+            "position": position.get("position"),
+            "ingested_at": position.get("ingested_at"),
+        }
         cursor.execute(
             """
-            INSERT INTO APEXML_DEV.RAW.POSITIONS (
-                session_key, driver_number, date, position, ingested_at
-            ) VALUES (
-                %(session_key)s, %(driver_number)s, %(date)s, %(position)s, %(ingested_at)s
-            )
+            MERGE INTO APEXML_DEV.RAW.POSITIONS AS target
+            USING (SELECT
+                %(session_key)s AS session_key,
+                %(driver_number)s AS driver_number,
+                %(date)s AS date,
+                %(position)s AS position,
+                %(ingested_at)s AS ingested_at
+            ) AS source
+            ON target.session_key = source.session_key
+                AND target.driver_number = source.driver_number
+                AND target.date = source.date
+            WHEN MATCHED THEN
+                UPDATE SET
+                    position = source.position,
+                    ingested_at = source.ingested_at
+            WHEN NOT MATCHED THEN
+                INSERT (session_key, driver_number, date, position, ingested_at)
+                VALUES (source.session_key, source.driver_number, source.date, source.position, source.ingested_at)
             """,
-            {
-                "session_key": position.get("session_key"),
-                "driver_number": position.get("driver_number"),
-                "date": position.get("date"),
-                "position": position.get("position"),
-                "ingested_at": position.get("ingested_at"),
-            },
+            position_params,
         )
         count += 1
 
