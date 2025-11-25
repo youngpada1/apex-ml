@@ -235,8 +235,12 @@ with tab2:
                     sql = generate_sql_from_question(prompt)
 
                     if sql:
+                        # TEMPORARY DEBUG: Show SQL query
+                        with st.expander("🔍 Debug: View generated SQL"):
+                            st.code(sql, language="sql")
+
                         try:
-                            # Execute the generated SQL (silently)
+                            # Execute the generated SQL
                             result_df = query_snowflake(sql)
 
                             if not result_df.empty:
