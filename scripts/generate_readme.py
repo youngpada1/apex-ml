@@ -66,11 +66,33 @@ A comprehensive data engineering platform for Formula 1 race analytics using Ope
 
 ApexML is a comprehensive data engineering platform that:
 
-- **Extracts** real-time Formula 1 data from the OpenF1 API
+- **Extracts** real-time Formula 1 data from the OpenF1 API (2023-2025)
 - **Loads** data into Snowflake data warehouse (RAW schema)
 - **Transforms** data using dbt (STAGING → ANALYTICS schemas)
 - **Tests** data quality with automated dbt tests
 - **Visualizes** insights through an interactive Streamlit dashboard
+- **Predicts** race outcomes using ML models (Random Forest, scikit-learn)
+- **Analyzes** driver performance trends across multiple seasons
+
+## ✨ Key Features
+
+### 📊 **Custom Analysis Builder**
+- Select metrics (lap times, positions, session counts)
+- Group by dimensions (Driver, Team, Season, Circuit)
+- Filter by season, circuit, driver, or team
+- Visualize with interactive charts (Plotly)
+
+### 🤖 **AI Assistant (ML-Powered)**
+- **Historical Queries**: "Who won the last race?" → GPT-4o-mini generates SQL, queries Snowflake
+- **ML Predictions**: "Who will win the next race?" → Random Forest predicts win probabilities
+- **Performance Analysis**: "Compare Verstappen 2023-2025" → Multi-season trend analysis
+- **Cost-Effective**: Hybrid LLM + ML approach (90-99% cheaper than pure LLM solutions)
+
+### 🔄 **Automated Data Pipeline**
+- Snowflake Task runs every 6 hours
+- Incremental loading (only new sessions)
+- MERGE statements prevent duplicates
+- Self-healing checks for existing data
 
 ---
 
@@ -153,16 +175,32 @@ ApexML is a comprehensive data engineering platform that:
           │
           ↓
 
-4️⃣ VISUALIZATION
-   ┌──────────────────────────────────┐
-   │  Streamlit Dashboard             │
-   │  • Custom Analysis Builder       │
-   │    - Metrics selector            │
-   │    - Dimensions selector         │
-   │    - Filters: Driver, Team, Session
-   │  • AI Assistant (coming soon)    │
-   │  • Interactive charts (Plotly)   │
-   └──────────────────────────────────┘
+4️⃣ VISUALIZATION & AI
+   ┌──────────────────────────────────────────────────┐
+   │  Streamlit Dashboard                             │
+   │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+   │  📊 Custom Analysis Builder                      │
+   │    • Metrics: Lap times, Positions, Sessions    │
+   │    • Dimensions: Driver, Team, Season, Circuit  │
+   │    • Filters: Driver, Team, Season, Circuit     │
+   │    • Charts: Bar, Line, Scatter, Table          │
+   │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+   │  🤖 AI Assistant (ML-Powered)                    │
+   │    • OpenRouter (GPT-4o-mini) - NLP & SQL gen   │
+   │    • scikit-learn - ML predictions              │
+   │                                                  │
+   │  Three AI modes:                                 │
+   │  1. Historical: "Who won last race?"            │
+   │     → LLM generates SQL → Query Snowflake       │
+   │                                                  │
+   │  2. Predictions: "Who will win next race?"      │
+   │     → Random Forest trains on historical data   │
+   │     → Returns win probabilities per driver      │
+   │                                                  │
+   │  3. Analysis: "Compare Verstappen 2023-2025"    │
+   │     → Multi-season performance trends           │
+   │     → Wins, podiums, avg position by year       │
+   └──────────────────────────────────────────────────┘
           │
           ↓
 
@@ -192,13 +230,14 @@ KEY FEATURES:
 
 ## 🛠️ Tech Stack
 
-**Data Ingestion:** OpenF1 API, Python 3.11+, httpx, snowflake-connector-python
+**Data Ingestion:** OpenF1 API (2023-2025, 85+ race sessions), Python 3.11+, httpx, snowflake-connector-python
 **Transformation:** dbt Core, dbt-snowflake (SQL-based ELT)
 **Data Warehouse:** Snowflake (RAW → STAGING → ANALYTICS schemas)
-**Visualization:** Streamlit
+**Visualization:** Streamlit, Plotly (interactive charts)
+**AI & ML:** OpenRouter (GPT-4o-mini for NLP), scikit-learn (Random Forest predictions)
 **Infrastructure:** Terraform (IaC)
 **Package Manager:** uv (fast Python package manager)
-**Testing:** pytest
+**Testing:** pytest, dbt data quality tests
 **CI/CD:** GitHub Actions
 
 ---
