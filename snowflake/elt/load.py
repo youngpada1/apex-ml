@@ -17,7 +17,7 @@ def get_snowflake_connection():
         database=os.getenv("SNOWFLAKE_DATABASE", "APEXML_DEV"),
         schema=os.getenv("SNOWFLAKE_SCHEMA", "RAW"),
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE", "ETL_WH_DEV"),
-        role=os.getenv("SNOWFLAKE_ROLE", "DATA_ENGINEER_DEV"),
+        role=os.getenv("SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
     )
 
 

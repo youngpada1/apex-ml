@@ -6,7 +6,7 @@ apex_ml:
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
       private_key_path: "/Users/youngpadawan/.ssh/snowflake_key.p8"
-      role: DATA_ENGINEER_DEV
+      role: APEX_ML_DEV_WRITE
       database: APEXML_DEV
       warehouse: ETL_WH_DEV
       schema: RAW
@@ -19,7 +19,7 @@ apex_ml:
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
       private_key_path: "/Users/youngpadawan/.ssh/snowflake_key.p8"
-      role: DATA_ENGINEER_STAGING
+      role: APEX_ML_STAGING_WRITE
       database: APEXML_STAGING
       warehouse: ETL_WH_STAGING
       schema: RAW
@@ -32,7 +32,7 @@ apex_ml:
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
       private_key_path: "/Users/youngpadawan/.ssh/snowflake_key.p8"
-      role: DATA_ENGINEER_PROD
+      role: APEX_ML_PROD_WRITE
       database: APEXML_PROD
       warehouse: ETL_WH_PROD
       schema: RAW

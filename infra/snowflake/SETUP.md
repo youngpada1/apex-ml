@@ -148,7 +148,7 @@ snowsql -a <account> -u <username> -f infra/snowflake/setup_roles.sql
 ```
 
 This script sets up:
-- Role hierarchy (SYSADMIN → DATA_ENGINEER → ANALYTICS_USER, ML_ENGINEER)
+- Role hierarchy (SYSADMIN → APEX_ML_{ENV}_ADMIN → APEX_ML_{ENV}_WRITE → APEX_ML_{ENV}_READ)
 - Database, schema, and warehouse grants
 - Future grants (auto-permissions for new tables/views)
 - Service account role assignment
@@ -178,9 +178,11 @@ SHOW WAREHOUSES;
 -- Check service account
 SHOW USERS LIKE 'ETL_SERVICE_ACCOUNT';
 
--- Verify role grants (from setup_roles.sql)
-SHOW GRANTS TO ROLE DATA_ENGINEER;
-SHOW GRANTS TO USER ETL_SERVICE_ACCOUNT;
+-- Verify role grants
+SHOW GRANTS TO ROLE APEX_ML_DEV_ADMIN;
+SHOW GRANTS TO ROLE APEX_ML_DEV_WRITE;
+SHOW GRANTS TO ROLE APEX_ML_DEV_READ;
+SHOW GRANTS TO USER APEX_ML_ETL_DEV;
 ```
 
 ## What Gets Created
@@ -191,11 +193,17 @@ ACCOUNTADMIN (Snowflake built-in)
     ↓
 SYSADMIN (Snowflake built-in)
     ↓
-DATA_ENGINEER (custom)
+APEX_ML_{ENV}_ADMIN (Full database access)
     ↓
-├── ANALYTICS_USER (custom)
-└── ML_ENGINEER (custom)
+APEX_ML_{ENV}_WRITE (ETL pipelines, dbt)
+    ↓
+APEX_ML_{ENV}_READ (App users, read-only)
 ```
+
+**Role Permissions:**
+- **APEX_ML_{ENV}_ADMIN**: Full access - create/modify schemas, tables, views
+- **APEX_ML_{ENV}_WRITE**: Write access - INSERT/UPDATE/DELETE in all schemas, run dbt
+- **APEX_ML_{ENV}_READ**: Read-only - SELECT from ANALYTICS schema only (for public app)
 
 ### Database Structure
 ```
@@ -214,9 +222,10 @@ APEXML_DEV
 - **ANALYTICS_WH_DEV**: XSMALL, auto-suspend 300s (for queries)
 
 ### Service Account
-- **Username**: `etl_service_account`
-- **Role**: DATA_ENGINEER
-- **Purpose**: Automated ETL pipelines
+- **Name**: `APEX_ML_ETL_{ENV}` (e.g., APEX_ML_ETL_DEV)
+- **Login**: `apex_ml_etl_{env}` (e.g., apex_ml_etl_dev)
+- **Role**: APEX_ML_{ENV}_WRITE
+- **Purpose**: Automated ETL pipelines and dbt transformations
 
 ## Multi-Environment Management
 
