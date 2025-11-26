@@ -27,33 +27,35 @@ provider "snowflake" {
 }
 
 # --- RBAC: Environment-Specific Custom Roles ---
-resource "snowflake_account_role" "data_engineer" {
-  name    = "DATA_ENGINEER_${upper(var.environment)}"
-  comment = "Role for data engineers with full access to ${var.environment} ETL operations"
+# Simple CRUD-based naming: ADMIN (full), WRITE (ETL), READ (app users)
+
+resource "snowflake_account_role" "admin" {
+  name    = "APEX_ML_${upper(var.environment)}_ADMIN"
+  comment = "Full admin access to ${var.environment} environment"
 }
 
-resource "snowflake_account_role" "analytics_user" {
-  name    = "ANALYTICS_USER_${upper(var.environment)}"
-  comment = "Role for analytics users with read-only access to ${var.environment}"
+resource "snowflake_account_role" "write" {
+  name    = "APEX_ML_${upper(var.environment)}_WRITE"
+  comment = "Write access for ETL pipelines in ${var.environment}"
 }
 
-resource "snowflake_account_role" "ml_engineer" {
-  name    = "ML_ENGINEER_${upper(var.environment)}"
-  comment = "Role for ML engineers with access to ${var.environment} analytics schema"
+resource "snowflake_account_role" "read" {
+  name    = "APEX_ML_${upper(var.environment)}_READ"
+  comment = "Read-only access for app users and analysts in ${var.environment}"
 }
 
 # --- Role Grants (Hierarchy) ---
-# ACCOUNTADMIN → SYSADMIN → DATA_ENGINEER_ENV → ANALYTICS_USER_ENV
+# ACCOUNTADMIN → SYSADMIN → APEX_ML_{ENV}_ADMIN → APEX_ML_{ENV}_WRITE → APEX_ML_{ENV}_READ
 
 # --- Service Account for ETL Pipeline ---
 # Each environment has its own service account
 
 resource "snowflake_user" "etl_service_account" {
-  name         = "ETL_SERVICE_ACCOUNT_${upper(var.environment)}"
-  login_name   = "etl_service_account_${lower(var.environment)}"
-  comment      = "Service account for automated ETL pipelines in ${var.environment}"
+  name         = "APEX_ML_ETL_${upper(var.environment)}"
+  login_name   = "apex_ml_etl_${lower(var.environment)}"
+  comment      = "Service account for ETL pipelines in ${var.environment}"
   password     = var.etl_service_account_password
-  default_role = snowflake_account_role.data_engineer.name
+  default_role = snowflake_account_role.write.name
 
   default_warehouse    = snowflake_warehouse.etl_warehouse.name
   must_change_password = false
