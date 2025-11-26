@@ -12,12 +12,24 @@ output "schemas" {
   description = "Snowflake schema names"
 }
 
-output "data_engineer_role" {
-  value       = snowflake_account_role.data_engineer.name
-  description = "Data engineer role name"
+output "roles" {
+  value = {
+    admin = snowflake_account_role.admin.name
+    write = snowflake_account_role.write.name
+    read  = snowflake_account_role.read.name
+  }
+  description = "Snowflake role names for the environment"
 }
 
-output "warehouse" {
-  value       = "COMPUTE_WH"
-  description = "Snowflake warehouse used for operations"
+output "warehouses" {
+  value = {
+    etl       = snowflake_warehouse.etl_warehouse.name
+    analytics = snowflake_warehouse.analytics_warehouse.name
+  }
+  description = "Snowflake warehouse names"
+}
+
+output "service_account" {
+  value       = snowflake_user.etl_service_account.name
+  description = "ETL service account name"
 }
