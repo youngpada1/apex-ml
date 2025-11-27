@@ -69,22 +69,17 @@ with tab1:
         metrics = st.multiselect(
             "Choose metrics to analyze",
             options=[
-                "--- Lap Performance ---",
                 "Average Lap Time",
                 "Best Lap Time",
                 "Total Laps",
                 "Fastest Laps Count",
-                "--- Sector Times ---",
                 "Average Sector 1",
                 "Average Sector 2",
                 "Average Sector 3",
-                "--- Race Position ---",
                 "Average Position",
                 "Best Position",
                 "Worst Position",
-                "--- Pit Strategy ---",
                 "Pit Stop Laps",
-                "--- General ---",
                 "Total Sessions"
             ],
             default=["Average Lap Time", "Total Laps"],
@@ -114,13 +109,10 @@ with tab1:
         dimensions = st.multiselect(
             "Choose dimensions to group by",
             options=[
-                "--- Core Dimensions ---",
                 "Driver",
                 "Team",
-                "--- Time & Location ---",
                 "Season",
                 "Circuit",
-                "--- Detailed Analysis ---",
                 "Laps"
             ],
             default=["Driver"],
@@ -248,59 +240,55 @@ with tab1:
     )
 
     if st.button("Generate Analysis", type="primary"):
-        # Filter out section headers from selections
-        filtered_metrics = [m for m in metrics if not m.startswith("---")]
-        filtered_dimensions = [d for d in dimensions if not d.startswith("---")]
-
-        if not filtered_metrics or not filtered_dimensions:
+        if not metrics or not dimensions:
             st.warning("Please select at least one metric and one dimension")
         else:
             try:
-                # Build query based on selections (use filtered lists)
+                # Build query based on selections
                 metric_sql = []
-                if "Average Lap Time" in filtered_metrics:
+                if "Average Lap Time" in metrics:
                     metric_sql.append("AVG(l.lap_duration) as avg_lap_time")
-                if "Best Lap Time" in filtered_metrics:
+                if "Best Lap Time" in metrics:
                     metric_sql.append("MIN(l.lap_duration) as best_lap_time")
-                if "Total Laps" in filtered_metrics:
+                if "Total Laps" in metrics:
                     metric_sql.append("COUNT(*) as total_laps")
-                if "Average Position" in filtered_metrics:
+                if "Average Position" in metrics:
                     metric_sql.append("AVG(r.final_position) as avg_position")
-                if "Best Position" in filtered_metrics:
+                if "Best Position" in metrics:
                     metric_sql.append("MIN(r.final_position) as best_position")
-                if "Worst Position" in filtered_metrics:
+                if "Worst Position" in metrics:
                     metric_sql.append("MAX(r.final_position) as worst_position")
-                if "Total Sessions" in filtered_metrics:
+                if "Total Sessions" in metrics:
                     metric_sql.append("COUNT(DISTINCT l.session_key) as total_sessions")
-                if "Pit Stop Laps" in filtered_metrics:
+                if "Pit Stop Laps" in metrics:
                     metric_sql.append("SUM(CASE WHEN rl.is_pit_out_lap THEN 1 ELSE 0 END) as pit_stop_laps")
-                if "Average Sector 1" in filtered_metrics:
+                if "Average Sector 1" in metrics:
                     metric_sql.append("AVG(l.segment_1_duration) as avg_sector_1")
-                if "Average Sector 2" in filtered_metrics:
+                if "Average Sector 2" in metrics:
                     metric_sql.append("AVG(l.segment_2_duration) as avg_sector_2")
-                if "Average Sector 3" in filtered_metrics:
+                if "Average Sector 3" in metrics:
                     metric_sql.append("AVG(l.segment_3_duration) as avg_sector_3")
-                if "Fastest Laps Count" in filtered_metrics:
+                if "Fastest Laps Count" in metrics:
                     metric_sql.append("SUM(CASE WHEN l.is_driver_fastest_lap THEN 1 ELSE 0 END) as fastest_laps_count")
 
                 dim_sql = []
                 group_by = []
                 needs_race_results = False
-                needs_raw_laps = "Pit Stop Laps" in filtered_metrics
+                needs_raw_laps = "Pit Stop Laps" in metrics
 
-                if "Driver" in filtered_dimensions:
+                if "Driver" in dimensions:
                     dim_sql.append("d.full_name as driver")
                     group_by.append("d.full_name")
-                if "Team" in filtered_dimensions:
+                if "Team" in dimensions:
                     dim_sql.append("d.team_name as team")
                     group_by.append("d.team_name")
-                if "Season" in filtered_dimensions:
+                if "Season" in dimensions:
                     dim_sql.append("l.year as season")
                     group_by.append("l.year")
-                if "Circuit" in filtered_dimensions:
+                if "Circuit" in dimensions:
                     dim_sql.append("l.circuit_short_name as circuit")
                     group_by.append("l.circuit_short_name")
-                if "Laps" in filtered_dimensions:
+                if "Laps" in dimensions:
                     dim_sql.append("l.lap_number as lap")
                     dim_sql.append("l.lap_position as position_during_lap")
                     dim_sql.append("CASE WHEN rl.is_pit_out_lap THEN 'Yes' ELSE 'No' END as is_pit_lap")
@@ -328,7 +316,7 @@ with tab1:
                     join_clauses.append("LEFT JOIN APEXML_DEV.RAW.LAPS rl ON l.session_key = rl.session_key AND l.driver_number = rl.driver_number AND l.lap_number = rl.lap_number")
 
                 # Add race results join if needed (for position metrics)
-                if "Average Position" in filtered_metrics or "Best Position" in filtered_metrics or "Worst Position" in filtered_metrics:
+                if "Average Position" in metrics or "Best Position" in metrics or "Worst Position" in metrics:
                     join_clauses.append("LEFT JOIN fct_race_results r ON l.driver_number = r.driver_number AND l.session_key = r.session_key")
 
                 query = f"""
