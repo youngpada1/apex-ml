@@ -1,5 +1,10 @@
 # Role hierarchy grants
 # ACCOUNTADMIN → SYSADMIN → ADMIN → WRITE → READ
+resource "snowflake_grant_account_role" "admin_to_accountadmin" {
+  role_name        = snowflake_account_role.admin.name
+  parent_role_name = "ACCOUNTADMIN"
+}
+
 resource "snowflake_grant_account_role" "admin_to_sysadmin" {
   role_name        = snowflake_account_role.admin.name
   parent_role_name = "SYSADMIN"
@@ -44,6 +49,40 @@ resource "snowflake_grant_privileges_to_account_role" "database_usage_read" {
   }
 }
 
+# RAW schema grants - ADMIN role has full control
+resource "snowflake_grant_privileges_to_account_role" "raw_schema_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["USAGE", "CREATE TABLE", "CREATE VIEW", "MODIFY", "MONITOR"]
+
+  on_schema {
+    schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}"
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "raw_tables_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "raw_future_tables_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]
+
+  on_schema_object {
+    future {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}"
+    }
+  }
+}
+
 # RAW schema grants - WRITE role can load data
 resource "snowflake_grant_privileges_to_account_role" "raw_schema_write" {
   account_role_name = snowflake_account_role.write.name
@@ -74,6 +113,64 @@ resource "snowflake_grant_privileges_to_account_role" "raw_future_tables_write" 
     future {
       object_type_plural = "TABLES"
       in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}"
+    }
+  }
+}
+
+# STAGING schema grants - ADMIN role has full control
+resource "snowflake_grant_privileges_to_account_role" "staging_schema_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["USAGE", "CREATE TABLE", "CREATE VIEW", "MODIFY", "MONITOR"]
+
+  on_schema {
+    schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "staging_tables_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+
+  on_schema_object {
+    future {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "staging_views_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "staging_future_views_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    future {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
     }
   }
 }
@@ -112,6 +209,18 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_wri
   }
 }
 
+resource "snowflake_grant_privileges_to_account_role" "staging_views_write" {
+  account_role_name = snowflake_account_role.write.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
+  }
+}
+
 resource "snowflake_grant_privileges_to_account_role" "staging_future_views_write" {
   account_role_name = snowflake_account_role.write.name
   privileges        = ["SELECT"]
@@ -134,6 +243,18 @@ resource "snowflake_grant_privileges_to_account_role" "staging_schema_read" {
   }
 }
 
+resource "snowflake_grant_privileges_to_account_role" "staging_tables_read" {
+  account_role_name = snowflake_account_role.read.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
+  }
+}
+
 resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_read" {
   account_role_name = snowflake_account_role.read.name
   privileges        = ["SELECT"]
@@ -142,6 +263,88 @@ resource "snowflake_grant_privileges_to_account_role" "staging_future_tables_rea
     future {
       object_type_plural = "TABLES"
       in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "staging_views_read" {
+  account_role_name = snowflake_account_role.read.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "staging_future_views_read" {
+  account_role_name = snowflake_account_role.read.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    future {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.staging.name}"
+    }
+  }
+}
+
+# ANALYTICS schema grants - ADMIN role has full control
+resource "snowflake_grant_privileges_to_account_role" "analytics_schema_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["USAGE", "CREATE TABLE", "MODIFY", "MONITOR"]
+
+  on_schema {
+    schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "analytics_tables_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT", "INSERT", "UPDATE", "DELETE"]
+
+  on_schema_object {
+    future {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "analytics_views_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "analytics_future_views_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    future {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
     }
   }
 }
@@ -180,6 +383,30 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_w
   }
 }
 
+resource "snowflake_grant_privileges_to_account_role" "analytics_views_write" {
+  account_role_name = snowflake_account_role.write.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "analytics_future_views_write" {
+  account_role_name = snowflake_account_role.write.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    future {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
+  }
+}
+
 # READ role can read from ANALYTICS schema (main app access)
 resource "snowflake_grant_privileges_to_account_role" "analytics_schema_read" {
   account_role_name = snowflake_account_role.read.name
@@ -187,6 +414,18 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_schema_read" {
 
   on_schema {
     schema_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "analytics_tables_read" {
+  account_role_name = snowflake_account_role.read.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "TABLES"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
   }
 }
 
@@ -202,7 +441,49 @@ resource "snowflake_grant_privileges_to_account_role" "analytics_future_tables_r
   }
 }
 
+resource "snowflake_grant_privileges_to_account_role" "analytics_views_read" {
+  account_role_name = snowflake_account_role.read.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "analytics_future_views_read" {
+  account_role_name = snowflake_account_role.read.name
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    future {
+      object_type_plural = "VIEWS"
+      in_schema          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}"
+    }
+  }
+}
+
 # Warehouse grants
+resource "snowflake_grant_privileges_to_account_role" "etl_warehouse_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["USAGE", "OPERATE", "MODIFY", "MONITOR"]
+  on_account_object {
+    object_type = "WAREHOUSE"
+    object_name = snowflake_warehouse.etl_warehouse.name
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "analytics_warehouse_admin" {
+  account_role_name = snowflake_account_role.admin.name
+  privileges        = ["USAGE", "OPERATE", "MODIFY", "MONITOR"]
+  on_account_object {
+    object_type = "WAREHOUSE"
+    object_name = snowflake_warehouse.analytics_warehouse.name
+  }
+}
+
 resource "snowflake_grant_privileges_to_account_role" "etl_warehouse_write" {
   account_role_name = snowflake_account_role.write.name
   privileges        = ["USAGE", "OPERATE"]
