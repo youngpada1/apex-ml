@@ -69,15 +69,44 @@ with tab1:
         metrics = st.multiselect(
             "Choose metrics to analyze",
             options=[
+                "--- Lap Performance ---",
                 "Average Lap Time",
                 "Best Lap Time",
                 "Total Laps",
+                "Fastest Laps Count",
+                "--- Sector Times ---",
+                "Average Sector 1",
+                "Average Sector 2",
+                "Average Sector 3",
+                "--- Race Position ---",
                 "Average Position",
                 "Best Position",
                 "Worst Position",
+                "--- Pit Strategy ---",
+                "Pit Stop Laps",
+                "--- General ---",
                 "Total Sessions"
             ],
-            default=["Average Lap Time", "Total Laps"]
+            default=["Average Lap Time", "Total Laps"],
+            help="""
+            📊 LAP PERFORMANCE
+            • Average Lap Time: Mean lap duration in seconds
+            • Best Lap Time: Fastest lap recorded
+            • Total Laps: Count of laps completed
+            • Fastest Laps Count: Number of times driver achieved fastest lap
+
+            ⏱️ SECTOR TIMES
+            • Average Sector 1/2/3: Mean sector times (track is divided into 3 sectors)
+
+            🏁 RACE POSITION
+            • Average/Best/Worst Position: Race finishing positions
+
+            🔧 PIT STRATEGY
+            • Pit Stop Laps: Laps where driver exited pit lane (first lap after pit stop)
+
+            📅 GENERAL
+            • Total Sessions: Number of race sessions
+            """
         )
 
     with col2:
@@ -85,12 +114,31 @@ with tab1:
         dimensions = st.multiselect(
             "Choose dimensions to group by",
             options=[
+                "--- Core Dimensions ---",
                 "Driver",
                 "Team",
+                "--- Time & Location ---",
                 "Season",
-                "Circuit"
+                "Circuit",
+                "--- Detailed Analysis ---",
+                "Laps"
             ],
-            default=["Driver"]
+            default=["Driver"],
+            help="""
+            👤 CORE DIMENSIONS
+            • Driver: Group by individual driver (e.g., Max Verstappen, Lewis Hamilton)
+            • Team: Group by constructor/team (e.g., Red Bull Racing, Mercedes)
+
+            📍 TIME & LOCATION
+            • Season: Group by year (e.g., 2023, 2024, 2025)
+            • Circuit: Group by race track (e.g., Monaco, Silverstone, Monza)
+
+            🔍 DETAILED ANALYSIS
+            • Laps: Show lap-by-lap details including lap number, position during lap, and pit stops
+
+            💡 TIP: Combine dimensions for detailed analysis
+            Example: Driver + Circuit shows performance per driver at each track
+            """
         )
 
     # Filters section - load available drivers, teams, seasons, and circuits
@@ -135,53 +183,62 @@ with tab1:
         available_circuits = []
         circuit_display = {}
 
-    st.subheader("Filters")
-    filter_col1, filter_col2, filter_col3 = st.columns(3)
+    # Smart filters - only show relevant filters based on selected dimensions
+    st.divider()
 
-    with filter_col1:
-        # Show driver filter only if Driver dimension is selected
-        if "Driver" in dimensions:
-            selected_driver = st.selectbox(
-                "Filter by Driver",
-                options=["All"] + available_drivers,
-                key="driver_filter"
-            )
-        else:
-            selected_driver = "All"
-
-    with filter_col2:
-        # Show team filter only if Team dimension is selected
-        if "Team" in dimensions:
-            selected_team = st.selectbox(
-                "Filter by Team",
-                options=["All"] + available_teams,
-                key="team_filter"
-            )
-        else:
-            selected_team = "All"
-
-    with filter_col3:
-        # Show season filter only if Season dimension is selected
-        if "Season" in dimensions:
-            selected_season = st.selectbox(
-                "Filter by Season",
-                options=["All"] + available_seasons,
-                key="season_filter"
-            )
-        else:
-            selected_season = "All"
-
-    # Additional row for circuit filter
+    # Build filter columns dynamically based on selected dimensions
+    active_filters = []
+    if "Driver" in dimensions:
+        active_filters.append("driver")
+    if "Team" in dimensions:
+        active_filters.append("team")
+    if "Season" in dimensions:
+        active_filters.append("season")
     if "Circuit" in dimensions:
-        selected_circuit = st.selectbox(
-            "Filter by Circuit",
-            options=["All"] + [circuit_display.get(c, c) for c in available_circuits],
-            key="circuit_filter"
-        )
-        # Extract just the circuit short name if not "All"
-        if selected_circuit != "All":
-            selected_circuit = selected_circuit.split(" (")[0]
+        active_filters.append("circuit")
+
+    if active_filters:
+        # Create columns only for active filters
+        filter_cols = st.columns(len(active_filters))
+
+        selected_driver = "All"
+        selected_team = "All"
+        selected_season = "All"
+        selected_circuit = "All"
+
+        for idx, filter_type in enumerate(active_filters):
+            with filter_cols[idx]:
+                if filter_type == "driver":
+                    selected_driver = st.selectbox(
+                        "🏎️ Driver",
+                        options=["All"] + available_drivers,
+                        key="driver_filter"
+                    )
+                elif filter_type == "team":
+                    selected_team = st.selectbox(
+                        "🏁 Team",
+                        options=["All"] + available_teams,
+                        key="team_filter"
+                    )
+                elif filter_type == "season":
+                    selected_season = st.selectbox(
+                        "📅 Season",
+                        options=["All"] + available_seasons,
+                        key="season_filter"
+                    )
+                elif filter_type == "circuit":
+                    selected_circuit = st.selectbox(
+                        "🏟️ Circuit",
+                        options=["All"] + [circuit_display.get(c, c) for c in available_circuits],
+                        key="circuit_filter"
+                    )
+                    # Extract just the circuit short name if not "All"
+                    if selected_circuit != "All":
+                        selected_circuit = selected_circuit.split(" (")[0]
     else:
+        selected_driver = "All"
+        selected_team = "All"
+        selected_season = "All"
         selected_circuit = "All"
 
     st.subheader("Visualization Type")
@@ -191,47 +248,66 @@ with tab1:
     )
 
     if st.button("Generate Analysis", type="primary"):
-        if not metrics or not dimensions:
+        # Filter out section headers from selections
+        filtered_metrics = [m for m in metrics if not m.startswith("---")]
+        filtered_dimensions = [d for d in dimensions if not d.startswith("---")]
+
+        if not filtered_metrics or not filtered_dimensions:
             st.warning("Please select at least one metric and one dimension")
         else:
             try:
-                # Build query based on selections
+                # Build query based on selections (use filtered lists)
                 metric_sql = []
-                if "Average Lap Time" in metrics:
+                if "Average Lap Time" in filtered_metrics:
                     metric_sql.append("AVG(l.lap_duration) as avg_lap_time")
-                if "Best Lap Time" in metrics:
+                if "Best Lap Time" in filtered_metrics:
                     metric_sql.append("MIN(l.lap_duration) as best_lap_time")
-                if "Total Laps" in metrics:
+                if "Total Laps" in filtered_metrics:
                     metric_sql.append("COUNT(*) as total_laps")
-                if "Average Position" in metrics:
+                if "Average Position" in filtered_metrics:
                     metric_sql.append("AVG(r.final_position) as avg_position")
-                if "Best Position" in metrics:
+                if "Best Position" in filtered_metrics:
                     metric_sql.append("MIN(r.final_position) as best_position")
-                if "Worst Position" in metrics:
+                if "Worst Position" in filtered_metrics:
                     metric_sql.append("MAX(r.final_position) as worst_position")
-                if "Total Sessions" in metrics:
+                if "Total Sessions" in filtered_metrics:
                     metric_sql.append("COUNT(DISTINCT l.session_key) as total_sessions")
+                if "Pit Stop Laps" in filtered_metrics:
+                    metric_sql.append("SUM(CASE WHEN rl.is_pit_out_lap THEN 1 ELSE 0 END) as pit_stop_laps")
+                if "Average Sector 1" in filtered_metrics:
+                    metric_sql.append("AVG(l.segment_1_duration) as avg_sector_1")
+                if "Average Sector 2" in filtered_metrics:
+                    metric_sql.append("AVG(l.segment_2_duration) as avg_sector_2")
+                if "Average Sector 3" in filtered_metrics:
+                    metric_sql.append("AVG(l.segment_3_duration) as avg_sector_3")
+                if "Fastest Laps Count" in filtered_metrics:
+                    metric_sql.append("SUM(CASE WHEN l.is_driver_fastest_lap THEN 1 ELSE 0 END) as fastest_laps_count")
 
                 dim_sql = []
                 group_by = []
                 needs_race_results = False
+                needs_raw_laps = "Pit Stop Laps" in filtered_metrics
 
-                if "Driver" in dimensions:
+                if "Driver" in filtered_dimensions:
                     dim_sql.append("d.full_name as driver")
                     group_by.append("d.full_name")
-                if "Team" in dimensions:
+                if "Team" in filtered_dimensions:
                     dim_sql.append("d.team_name as team")
                     group_by.append("d.team_name")
-                if "Season" in dimensions:
-                    dim_sql.append("r.year as season")
-                    group_by.append("r.year")
-                    needs_race_results = True
-                if "Circuit" in dimensions:
-                    dim_sql.append("r.circuit_short_name as circuit")
-                    dim_sql.append("r.location as location")
-                    group_by.append("r.circuit_short_name")
-                    group_by.append("r.location")
-                    needs_race_results = True
+                if "Season" in filtered_dimensions:
+                    dim_sql.append("l.year as season")
+                    group_by.append("l.year")
+                if "Circuit" in filtered_dimensions:
+                    dim_sql.append("l.circuit_short_name as circuit")
+                    group_by.append("l.circuit_short_name")
+                if "Laps" in filtered_dimensions:
+                    dim_sql.append("l.lap_number as lap")
+                    dim_sql.append("l.lap_position as position_during_lap")
+                    dim_sql.append("CASE WHEN rl.is_pit_out_lap THEN 'Yes' ELSE 'No' END as is_pit_lap")
+                    group_by.append("l.lap_number")
+                    group_by.append("l.lap_position")
+                    group_by.append("rl.is_pit_out_lap")
+                    needs_raw_laps = True
 
                 # Build WHERE clause with filters
                 where_conditions = ["l.lap_duration > 0"]
@@ -240,29 +316,31 @@ with tab1:
                 if selected_team != "All":
                     where_conditions.append(f"d.team_name = '{selected_team}'")
                 if selected_season != "All":
-                    where_conditions.append(f"r.year = {selected_season}")
-                    needs_race_results = True
+                    where_conditions.append(f"l.year = {selected_season}")
                 if selected_circuit != "All":
-                    where_conditions.append(f"r.circuit_short_name = '{selected_circuit}'")
-                    needs_race_results = True
+                    where_conditions.append(f"l.circuit_short_name = '{selected_circuit}'")
 
-                # Ensure we join with race_results if needed
-                join_clause = "LEFT JOIN fct_race_results r ON l.driver_number = r.driver_number AND l.session_key = r.session_key"
-                if needs_race_results:
-                    # Require race_results to be present for Season/Circuit filtering
-                    where_conditions.append("r.session_key IS NOT NULL")
+                # Build JOIN clauses
+                join_clauses = ["JOIN dim_drivers d ON l.driver_number = d.driver_number"]
+
+                # Add raw laps join for pit stop data
+                if needs_raw_laps:
+                    join_clauses.append("LEFT JOIN APEXML_DEV.RAW.LAPS rl ON l.session_key = rl.session_key AND l.driver_number = rl.driver_number AND l.lap_number = rl.lap_number")
+
+                # Add race results join if needed (for position metrics)
+                if "Average Position" in filtered_metrics or "Best Position" in filtered_metrics or "Worst Position" in filtered_metrics:
+                    join_clauses.append("LEFT JOIN fct_race_results r ON l.driver_number = r.driver_number AND l.session_key = r.session_key")
 
                 query = f"""
                 SELECT
                     {', '.join(dim_sql)},
                     {', '.join(metric_sql)}
                 FROM fct_lap_times l
-                JOIN dim_drivers d ON l.driver_number = d.driver_number
-                {join_clause}
+                {' '.join(join_clauses)}
                 WHERE {' AND '.join(where_conditions)}
                 GROUP BY {', '.join(group_by)}
                 ORDER BY {metric_sql[0].split(' as ')[1]}
-                LIMIT 20
+                LIMIT 100
                 """
 
                 result_df = query_snowflake(query)
