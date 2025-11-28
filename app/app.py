@@ -178,14 +178,22 @@ with tab1:
     # Smart filters - only show relevant filters based on selected dimensions
     st.divider()
 
+    # REQUIRED: Season filter (multi-select)
+    st.markdown("**📅 Season (Required)**")
+    selected_seasons = st.multiselect(
+        "Select one or more seasons to analyze",
+        options=available_seasons,
+        default=[available_seasons[0]] if available_seasons else [],
+        key="season_filter_required",
+        help="Select seasons to compare. Required to provide temporal context for analysis."
+    )
+
     # Build filter columns dynamically based on selected dimensions
     active_filters = []
     if "Driver" in dimensions:
         active_filters.append("driver")
     if "Team" in dimensions:
         active_filters.append("team")
-    if "Season" in dimensions:
-        active_filters.append("season")
     if "Circuit" in dimensions:
         active_filters.append("circuit")
 
@@ -193,45 +201,43 @@ with tab1:
         # Create columns only for active filters
         filter_cols = st.columns(len(active_filters))
 
-        selected_driver = "All"
-        selected_team = "All"
-        selected_season = "All"
-        selected_circuit = "All"
+        selected_drivers = []
+        selected_teams = []
+        selected_circuits = []
 
         for idx, filter_type in enumerate(active_filters):
             with filter_cols[idx]:
                 if filter_type == "driver":
-                    selected_driver = st.selectbox(
+                    selected_drivers = st.multiselect(
                         "🏎️ Driver",
-                        options=["All"] + available_drivers,
-                        key="driver_filter"
+                        options=available_drivers,
+                        default=[],
+                        key="driver_filter",
+                        help="Select one or more drivers to compare. Leave empty for all drivers."
                     )
                 elif filter_type == "team":
-                    selected_team = st.selectbox(
+                    selected_teams = st.multiselect(
                         "🏁 Team",
-                        options=["All"] + available_teams,
-                        key="team_filter"
-                    )
-                elif filter_type == "season":
-                    selected_season = st.selectbox(
-                        "📅 Season",
-                        options=["All"] + available_seasons,
-                        key="season_filter"
+                        options=available_teams,
+                        default=[],
+                        key="team_filter",
+                        help="Select one or more teams to compare. Leave empty for all teams."
                     )
                 elif filter_type == "circuit":
-                    selected_circuit = st.selectbox(
+                    circuit_options = [circuit_display.get(c, c) for c in available_circuits]
+                    selected_circuits_display = st.multiselect(
                         "🏟️ Circuit",
-                        options=["All"] + [circuit_display.get(c, c) for c in available_circuits],
-                        key="circuit_filter"
+                        options=circuit_options,
+                        default=[],
+                        key="circuit_filter",
+                        help="Select one or more circuits to compare. Leave empty for all circuits."
                     )
-                    # Extract just the circuit short name if not "All"
-                    if selected_circuit != "All":
-                        selected_circuit = selected_circuit.split(" (")[0]
+                    # Extract just the circuit short names
+                    selected_circuits = [c.split(" (")[0] for c in selected_circuits_display]
     else:
-        selected_driver = "All"
-        selected_team = "All"
-        selected_season = "All"
-        selected_circuit = "All"
+        selected_drivers = []
+        selected_teams = []
+        selected_circuits = []
 
     st.subheader("Visualization Type")
     viz_type = st.selectbox(
@@ -242,6 +248,8 @@ with tab1:
     if st.button("Generate Analysis", type="primary"):
         if not metrics or not dimensions:
             st.warning("Please select at least one metric and one dimension")
+        elif not selected_seasons:
+            st.warning("⚠️ Please select at least one season to analyze")
         else:
             try:
                 # Build query based on selections
@@ -299,14 +307,38 @@ with tab1:
 
                 # Build WHERE clause with filters
                 where_conditions = ["l.lap_duration > 0"]
-                if selected_driver != "All":
-                    where_conditions.append(f"d.full_name = '{selected_driver}'")
-                if selected_team != "All":
-                    where_conditions.append(f"d.team_name = '{selected_team}'")
-                if selected_season != "All":
-                    where_conditions.append(f"l.year = {selected_season}")
-                if selected_circuit != "All":
-                    where_conditions.append(f"l.circuit_short_name = '{selected_circuit}'")
+
+                # Season filter (required - always applied)
+                if selected_seasons:
+                    if len(selected_seasons) == 1:
+                        where_conditions.append(f"l.year = {selected_seasons[0]}")
+                    else:
+                        season_list = ', '.join(map(str, selected_seasons))
+                        where_conditions.append(f"l.year IN ({season_list})")
+
+                # Driver filter (multi-select)
+                if selected_drivers:
+                    if len(selected_drivers) == 1:
+                        where_conditions.append(f"d.full_name = '{selected_drivers[0]}'")
+                    else:
+                        driver_list = "', '".join(selected_drivers)
+                        where_conditions.append(f"d.full_name IN ('{driver_list}')")
+
+                # Team filter (multi-select)
+                if selected_teams:
+                    if len(selected_teams) == 1:
+                        where_conditions.append(f"d.team_name = '{selected_teams[0]}'")
+                    else:
+                        team_list = "', '".join(selected_teams)
+                        where_conditions.append(f"d.team_name IN ('{team_list}')")
+
+                # Circuit filter (multi-select)
+                if selected_circuits:
+                    if len(selected_circuits) == 1:
+                        where_conditions.append(f"l.circuit_short_name = '{selected_circuits[0]}'")
+                    else:
+                        circuit_list = "', '".join(selected_circuits)
+                        where_conditions.append(f"l.circuit_short_name IN ('{circuit_list}')'")
 
                 # Build JOIN clauses
                 join_clauses = ["JOIN dim_drivers d ON l.driver_number = d.driver_number"]
@@ -324,16 +356,21 @@ with tab1:
                     {', '.join(dim_sql)},
                     {', '.join(metric_sql)}
                 FROM fct_lap_times l
-                {' '.join(join_clauses)}
+                {chr(10).join(join_clauses)}
                 WHERE {' AND '.join(where_conditions)}
                 GROUP BY {', '.join(group_by)}
                 ORDER BY {metric_sql[0].split(' as ')[1]}
                 LIMIT 100
                 """
 
+                # Debug: Show the generated query
+                with st.expander("🔍 Debug: View Generated SQL Query"):
+                    st.code(query, language="sql")
+
                 result_df = query_snowflake(query)
 
                 st.subheader("Analysis Results")
+                st.write(f"**Rows returned:** {len(result_df)}")
 
                 if viz_type == "Table":
                     st.dataframe(result_df, use_container_width=True)

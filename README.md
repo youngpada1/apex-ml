@@ -399,6 +399,8 @@ uv run dbt test
 ```
 apex-ml/
 ├── app/                      # Streamlit dashboard
+│   ├── app.py                # Main Streamlit app
+│   └── ml/                   # ML models (predictions, AI assistant)
 ├── snowflake/
 │   ├── dbt_project/          # dbt transformations
 │   │   ├── models/
@@ -408,22 +410,30 @@ apex-ml/
 │   │   ├── dbt_project.yml
 │   │   └── profiles.yml
 │   ├── elt/                  # Data pipeline scripts
-│   │   ├── extract.py
-│   │   └── load.py
+│   │   ├── extract.py        # OpenF1 API extraction
+│   │   ├── load.py           # Snowflake loading
+│   │   ├── load_historical.py
+│   │   ├── load_by_year.py
+│   │   └── refresh_latest.py
 │   └── config/               # Snowflake configs
 ├── infra/
 │   └── snowflake/            # Terraform infrastructure
 │       ├── main.tf
 │       ├── grants.tf
 │       └── tables.tf
+├── library/                  # Shared utilities
+│   ├── connection.py         # Snowflake connection manager
+│   ├── config.py             # Configuration management
+│   └── exceptions.py         # Custom exceptions
 ├── scripts/                  # Shell scripts
-│   ├── run_dbt.sh
-│   └── setup_snowflake_keypair.sh
-├── tests/                    # Test files
-│   └── test_api.py
-├── ml/                       # ML models (future)
+│   └── run_dbt.sh
+├── tests/                    # Automated tests
+│   ├── test_data_loads.py
+│   └── test_connection.py
 └── pyproject.toml            # Dependencies & config
 ```
+
+---
 
 ---
 
