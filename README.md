@@ -206,9 +206,10 @@ plotly>=6.5.0
 python-dotenv>=1.2.1
 openai>=1.57.4
 scikit-learn>=1.6.1
+pydantic-settings>=2.0.0
 ```
 
-### All Installed Packages (110 total)
+### All Installed Packages (111 total)
 
 <details>
 <summary>View all packages</summary>
@@ -285,6 +286,7 @@ pyarrow                                  21.0.0
 pycparser                                2.23
 pydantic                                 2.12.4
 pydantic-core                            2.41.5
+pydantic-settings                        2.12.0
 pydeck                                   0.9.1
 pygments                                 2.19.2
 pyjwt                                    2.10.1
@@ -399,8 +401,6 @@ uv run dbt test
 ```
 apex-ml/
 ├── app/                      # Streamlit dashboard
-│   ├── app.py                # Main Streamlit app
-│   └── ml/                   # ML models (predictions, AI assistant)
 ├── snowflake/
 │   ├── dbt_project/          # dbt transformations
 │   │   ├── models/
@@ -410,30 +410,22 @@ apex-ml/
 │   │   ├── dbt_project.yml
 │   │   └── profiles.yml
 │   ├── elt/                  # Data pipeline scripts
-│   │   ├── extract.py        # OpenF1 API extraction
-│   │   ├── load.py           # Snowflake loading
-│   │   ├── load_historical.py
-│   │   ├── load_by_year.py
-│   │   └── refresh_latest.py
+│   │   ├── extract.py
+│   │   └── load.py
 │   └── config/               # Snowflake configs
 ├── infra/
 │   └── snowflake/            # Terraform infrastructure
 │       ├── main.tf
 │       ├── grants.tf
 │       └── tables.tf
-├── library/                  # Shared utilities
-│   ├── connection.py         # Snowflake connection manager
-│   ├── config.py             # Configuration management
-│   └── exceptions.py         # Custom exceptions
 ├── scripts/                  # Shell scripts
-│   └── run_dbt.sh
-├── tests/                    # Automated tests
-│   ├── test_data_loads.py
-│   └── test_connection.py
+│   ├── run_dbt.sh
+│   └── setup_snowflake_keypair.sh
+├── tests/                    # Test files
+│   └── test_api.py
+├── ml/                       # ML models (future)
 └── pyproject.toml            # Dependencies & config
 ```
-
----
 
 ---
 
