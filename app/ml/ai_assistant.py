@@ -1,33 +1,16 @@
 """AI Assistant powered by OpenRouter for F1 data analysis."""
 import os
+import sys
 from openai import OpenAI
 import pandas as pd
-import snowflake.connector
 from pathlib import Path
 from typing import Optional
 from functools import lru_cache
 
+# Add parent directory to path for library imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-def get_snowflake_connection():
-    """Get Snowflake connection for schema introspection."""
-    account = os.getenv('SNOWFLAKE_ACCOUNT')
-    user = os.getenv('SNOWFLAKE_USER')
-
-    if not account:
-        raise ValueError("SNOWFLAKE_ACCOUNT environment variable is not set")
-    if not user:
-        raise ValueError("SNOWFLAKE_USER environment variable is not set")
-
-    return snowflake.connector.connect(
-        user=user,
-        account=account,
-        authenticator='SNOWFLAKE_JWT',
-        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
-        warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
-        database=os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV'),
-        schema='ANALYTICS',
-        role=os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN')
-    )
+from library.connection import connection_manager
 
 
 @lru_cache(maxsize=1)
@@ -39,25 +22,24 @@ def get_dynamic_schema_context() -> str:
     Cached to avoid repeated database queries (cache invalidates on app restart).
     """
     try:
-        conn = get_snowflake_connection()
-        cursor = conn.cursor()
+        with connection_manager.get_connection(schema="ANALYTICS") as conn:
+            cursor = conn.cursor()
 
-        # Query to get all tables and columns in ANALYTICS schema
-        query = """
-        SELECT
-            table_name,
-            column_name,
-            data_type,
-            ordinal_position
-        FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE table_schema = 'ANALYTICS'
-        ORDER BY table_name, ordinal_position
-        """
+            # Query to get all tables and columns in ANALYTICS schema
+            query = """
+            SELECT
+                table_name,
+                column_name,
+                data_type,
+                ordinal_position
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE table_schema = 'ANALYTICS'
+            ORDER BY table_name, ordinal_position
+            """
 
-        cursor.execute(query)
-        results = cursor.fetchall()
-        cursor.close()
-        conn.close()
+            cursor.execute(query)
+            results = cursor.fetchall()
+            cursor.close()
 
         # Build schema context from results
         schema_by_table = {}

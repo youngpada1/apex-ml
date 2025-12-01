@@ -1,24 +1,13 @@
 import os
 from datetime import datetime
 from typing import Any
+import sys
+from pathlib import Path
 
-import snowflake.connector
-from snowflake.connector import DictCursor
+# Add parent directory to path for library imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-
-def get_snowflake_connection():
-    from pathlib import Path
-
-    return snowflake.connector.connect(
-        account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        user=os.getenv("SNOWFLAKE_USER"),
-        authenticator='SNOWFLAKE_JWT',
-        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
-        database=os.getenv("SNOWFLAKE_DATABASE", "APEXML_DEV"),
-        schema=os.getenv("SNOWFLAKE_SCHEMA", "RAW"),
-        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE", "ETL_WH_DEV"),
-        role=os.getenv("SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
-    )
+from library.connection import connection_manager
 
 
 def load_sessions(conn, sessions: list[dict[str, Any]]) -> int:
@@ -222,9 +211,7 @@ def load_positions(conn, positions: list[dict[str, Any]]) -> int:
 
 
 def load_all(data: dict[str, list[dict[str, Any]]]):
-    conn = get_snowflake_connection()
-
-    try:
+    with connection_manager.get_connection(schema="RAW") as conn:
         # Ensure warehouse is active
         cursor = conn.cursor()
         warehouse = os.getenv("SNOWFLAKE_WAREHOUSE", "ETL_WH_DEV")
@@ -242,9 +229,6 @@ def load_all(data: dict[str, list[dict[str, Any]]]):
 
         positions_count = load_positions(conn, data["positions"])
         print(f"Loaded {positions_count} positions")
-
-    finally:
-        conn.close()
 
 
 if __name__ == "__main__":

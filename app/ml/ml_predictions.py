@@ -5,32 +5,15 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
 from sklearn.preprocessing import LabelEncoder
 from pathlib import Path
-import snowflake.connector
+import sys
 import pickle
 from typing import Optional, Dict, Tuple
 from datetime import datetime
 
+# Add parent directory to path for library imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-def get_snowflake_connection():
-    """Get Snowflake connection for ML training data."""
-    account = os.getenv('SNOWFLAKE_ACCOUNT')
-    user = os.getenv('SNOWFLAKE_USER')
-
-    if not account:
-        raise ValueError("SNOWFLAKE_ACCOUNT environment variable is not set")
-    if not user:
-        raise ValueError("SNOWFLAKE_USER environment variable is not set")
-
-    return snowflake.connector.connect(
-        user=user,
-        account=account,
-        authenticator='SNOWFLAKE_JWT',
-        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
-        warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
-        database=os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV'),
-        schema='ANALYTICS',
-        role=os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN')
-    )
+from library.connection import connection_manager
 
 
 class RaceWinnerPredictor:
@@ -44,38 +27,36 @@ class RaceWinnerPredictor:
 
     def fetch_training_data(self) -> pd.DataFrame:
         """Fetch historical race results for training."""
-        conn = get_snowflake_connection()
+        with connection_manager.get_connection(schema="ANALYTICS") as conn:
+            query = """
+            WITH driver_stats AS (
+                SELECT
+                    r.driver_number,
+                    r.driver_name,
+                    r.team_name,
+                    r.circuit_short_name,
+                    r.year,
+                    r.final_position,
+                    AVG(l.lap_duration) as avg_lap_time,
+                    MIN(l.lap_duration) as best_lap_time,
+                    COUNT(l.lap_number) as total_laps,
+                    AVG(l.position) as avg_position_during_race
+                FROM fct_race_results r
+                LEFT JOIN fct_lap_times l
+                    ON r.session_key = l.session_key
+                    AND r.driver_number = l.driver_number
+                    AND l.lap_duration > 0
+                WHERE r.session_name = 'Race'
+                    AND r.final_position IS NOT NULL
+                GROUP BY r.driver_number, r.driver_name, r.team_name,
+                         r.circuit_short_name, r.year, r.final_position
+            )
+            SELECT * FROM driver_stats
+            ORDER BY year, circuit_short_name
+            """
 
-        query = """
-        WITH driver_stats AS (
-            SELECT
-                r.driver_number,
-                r.driver_name,
-                r.team_name,
-                r.circuit_short_name,
-                r.year,
-                r.final_position,
-                AVG(l.lap_duration) as avg_lap_time,
-                MIN(l.lap_duration) as best_lap_time,
-                COUNT(l.lap_number) as total_laps,
-                AVG(l.position) as avg_position_during_race
-            FROM fct_race_results r
-            LEFT JOIN fct_lap_times l
-                ON r.session_key = l.session_key
-                AND r.driver_number = l.driver_number
-                AND l.lap_duration > 0
-            WHERE r.session_name = 'Race'
-                AND r.final_position IS NOT NULL
-            GROUP BY r.driver_number, r.driver_name, r.team_name,
-                     r.circuit_short_name, r.year, r.final_position
-        )
-        SELECT * FROM driver_stats
-        ORDER BY year, circuit_short_name
-        """
-
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df
+            df = pd.read_sql(query, conn)
+            return df
 
     def train(self):
         """Train the model on historical data."""
@@ -115,32 +96,30 @@ class RaceWinnerPredictor:
             self.train()
 
         # Fetch recent driver performance
-        conn = get_snowflake_connection()
+        with connection_manager.get_connection(schema="ANALYTICS") as conn:
+            query = f"""
+            WITH recent_performance AS (
+                SELECT
+                    r.driver_number,
+                    r.driver_name,
+                    r.team_name,
+                    AVG(l.lap_duration) as avg_lap_time,
+                    MIN(l.lap_duration) as best_lap_time,
+                    COUNT(l.lap_number) as total_laps,
+                    AVG(l.position) as avg_position_during_race
+                FROM fct_race_results r
+                LEFT JOIN fct_lap_times l
+                    ON r.session_key = l.session_key
+                    AND r.driver_number = l.driver_number
+                    AND l.lap_duration > 0
+                WHERE r.session_name = 'Race'
+                    AND r.year >= YEAR(CURRENT_DATE()) - 1
+                GROUP BY r.driver_number, r.driver_name, r.team_name
+            )
+            SELECT * FROM recent_performance
+            """
 
-        query = f"""
-        WITH recent_performance AS (
-            SELECT
-                r.driver_number,
-                r.driver_name,
-                r.team_name,
-                AVG(l.lap_duration) as avg_lap_time,
-                MIN(l.lap_duration) as best_lap_time,
-                COUNT(l.lap_number) as total_laps,
-                AVG(l.position) as avg_position_during_race
-            FROM fct_race_results r
-            LEFT JOIN fct_lap_times l
-                ON r.session_key = l.session_key
-                AND r.driver_number = l.driver_number
-                AND l.lap_duration > 0
-            WHERE r.session_name = 'Race'
-                AND r.year >= YEAR(CURRENT_DATE()) - 1
-            GROUP BY r.driver_number, r.driver_name, r.team_name
-        )
-        SELECT * FROM recent_performance
-        """
-
-        df = pd.read_sql(query, conn)
-        conn.close()
+            df = pd.read_sql(query, conn)
 
         if df.empty:
             return pd.DataFrame()
@@ -191,40 +170,38 @@ class PerformanceAnalyzer:
         Returns:
             DataFrame with season-by-season statistics
         """
-        conn = get_snowflake_connection()
+        with connection_manager.get_connection(schema="ANALYTICS") as conn:
+            seasons_str = ','.join(map(str, seasons))
 
-        seasons_str = ','.join(map(str, seasons))
+            query = f"""
+            WITH season_stats AS (
+                SELECT
+                    r.year,
+                    r.driver_name,
+                    r.team_name,
+                    COUNT(DISTINCT r.session_key) as races,
+                    SUM(CASE WHEN r.final_position = 1 THEN 1 ELSE 0 END) as wins,
+                    SUM(CASE WHEN r.final_position <= 3 THEN 1 ELSE 0 END) as podiums,
+                    AVG(r.final_position) as avg_position,
+                    MIN(r.final_position) as best_position,
+                    AVG(l.lap_duration) as avg_lap_time,
+                    MIN(l.lap_duration) as best_lap_time
+                FROM fct_race_results r
+                LEFT JOIN fct_lap_times l
+                    ON r.session_key = l.session_key
+                    AND r.driver_number = l.driver_number
+                    AND l.lap_duration > 0
+                WHERE r.driver_name = '{driver_name}'
+                    AND r.session_name = 'Race'
+                    AND r.year IN ({seasons_str})
+                GROUP BY r.year, r.driver_name, r.team_name
+            )
+            SELECT * FROM season_stats
+            ORDER BY year
+            """
 
-        query = f"""
-        WITH season_stats AS (
-            SELECT
-                r.year,
-                r.driver_name,
-                r.team_name,
-                COUNT(DISTINCT r.session_key) as races,
-                SUM(CASE WHEN r.final_position = 1 THEN 1 ELSE 0 END) as wins,
-                SUM(CASE WHEN r.final_position <= 3 THEN 1 ELSE 0 END) as podiums,
-                AVG(r.final_position) as avg_position,
-                MIN(r.final_position) as best_position,
-                AVG(l.lap_duration) as avg_lap_time,
-                MIN(l.lap_duration) as best_lap_time
-            FROM fct_race_results r
-            LEFT JOIN fct_lap_times l
-                ON r.session_key = l.session_key
-                AND r.driver_number = l.driver_number
-                AND l.lap_duration > 0
-            WHERE r.driver_name = '{driver_name}'
-                AND r.session_name = 'Race'
-                AND r.year IN ({seasons_str})
-            GROUP BY r.year, r.driver_name, r.team_name
-        )
-        SELECT * FROM season_stats
-        ORDER BY year
-        """
-
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df
+            df = pd.read_sql(query, conn)
+            return df
 
     @staticmethod
     def predict_season_performance(driver_name: str, current_year: int) -> Dict[str, float]:
@@ -238,42 +215,40 @@ class PerformanceAnalyzer:
         Returns:
             Dictionary with predicted wins, podiums, avg position
         """
-        conn = get_snowflake_connection()
+        with connection_manager.get_connection(schema="ANALYTICS") as conn:
+            # Get historical season data
+            query = f"""
+            WITH historical_seasons AS (
+                SELECT
+                    r.year,
+                    COUNT(DISTINCT r.session_key) as races,
+                    SUM(CASE WHEN r.final_position = 1 THEN 1 ELSE 0 END) as wins,
+                    SUM(CASE WHEN r.final_position <= 3 THEN 1 ELSE 0 END) as podiums,
+                    AVG(r.final_position) as avg_position
+                FROM fct_race_results r
+                WHERE r.driver_name = '{driver_name}'
+                    AND r.session_name = 'Race'
+                    AND r.year < {current_year}
+                GROUP BY r.year
+            ),
+            current_progress AS (
+                SELECT
+                    COUNT(DISTINCT r.session_key) as races_so_far,
+                    SUM(CASE WHEN r.final_position = 1 THEN 1 ELSE 0 END) as wins_so_far,
+                    SUM(CASE WHEN r.final_position <= 3 THEN 1 ELSE 0 END) as podiums_so_far,
+                    AVG(r.final_position) as avg_position_so_far
+                FROM fct_race_results r
+                WHERE r.driver_name = '{driver_name}'
+                    AND r.session_name = 'Race'
+                    AND r.year = {current_year}
+            )
+            SELECT * FROM historical_seasons
+            UNION ALL
+            SELECT {current_year} as year, * FROM current_progress
+            ORDER BY year
+            """
 
-        # Get historical season data
-        query = f"""
-        WITH historical_seasons AS (
-            SELECT
-                r.year,
-                COUNT(DISTINCT r.session_key) as races,
-                SUM(CASE WHEN r.final_position = 1 THEN 1 ELSE 0 END) as wins,
-                SUM(CASE WHEN r.final_position <= 3 THEN 1 ELSE 0 END) as podiums,
-                AVG(r.final_position) as avg_position
-            FROM fct_race_results r
-            WHERE r.driver_name = '{driver_name}'
-                AND r.session_name = 'Race'
-                AND r.year < {current_year}
-            GROUP BY r.year
-        ),
-        current_progress AS (
-            SELECT
-                COUNT(DISTINCT r.session_key) as races_so_far,
-                SUM(CASE WHEN r.final_position = 1 THEN 1 ELSE 0 END) as wins_so_far,
-                SUM(CASE WHEN r.final_position <= 3 THEN 1 ELSE 0 END) as podiums_so_far,
-                AVG(r.final_position) as avg_position_so_far
-            FROM fct_race_results r
-            WHERE r.driver_name = '{driver_name}'
-                AND r.session_name = 'Race'
-                AND r.year = {current_year}
-        )
-        SELECT * FROM historical_seasons
-        UNION ALL
-        SELECT {current_year} as year, * FROM current_progress
-        ORDER BY year
-        """
-
-        df = pd.read_sql(query, conn)
-        conn.close()
+            df = pd.read_sql(query, conn)
 
         if df.empty:
             return {"predicted_wins": 0, "predicted_podiums": 0, "predicted_avg_position": 15}

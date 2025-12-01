@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import snowflake.connector
 import os
+import sys
 from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
@@ -9,37 +9,21 @@ from dotenv import load_dotenv
 from ml.ai_assistant import get_ai_response, generate_sql_from_question, answer_question_from_data
 from ml.ml_predictions import RaceWinnerPredictor, PerformanceAnalyzer, detect_question_type
 
+# Add parent directory to path for library imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from library.connection import connection_manager
+
 # Load environment variables from .env file
 load_dotenv()
 
 st.set_page_config(page_title="ApexML – F1 Analytics", layout="wide")
 
-# Snowflake connection
-@st.cache_resource
-def get_snowflake_connection():
-    account = os.getenv('SNOWFLAKE_ACCOUNT')
-    user = os.getenv('SNOWFLAKE_USER')
-
-    if not account:
-        raise ValueError("SNOWFLAKE_ACCOUNT environment variable is not set")
-    if not user:
-        raise ValueError("SNOWFLAKE_USER environment variable is not set")
-
-    return snowflake.connector.connect(
-        user=user,
-        account=account,
-        authenticator='SNOWFLAKE_JWT',
-        private_key_file=str(Path.home() / '.ssh' / 'snowflake_key.p8'),
-        warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
-        database=os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV'),
-        schema=os.getenv('SNOWFLAKE_SCHEMA', 'ANALYTICS'),
-        role=os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN')
-    )
-
+# Snowflake connection and query
 @st.cache_data(ttl=300)
 def query_snowflake(query):
-    conn = get_snowflake_connection()
-    return pd.read_sql(query, conn)
+    with connection_manager.get_connection(schema="ANALYTICS") as conn:
+        return pd.read_sql(query, conn)
 
 @st.cache_resource
 def get_ml_predictor():
