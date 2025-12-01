@@ -1,5 +1,5 @@
 """Centralized configuration using Pydantic."""
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 from functools import lru_cache
 from typing import Optional
@@ -23,10 +23,12 @@ class Settings(BaseSettings):
     # Environment
     environment: str = "dev"
 
-    class Config:
-        """Pydantic configuration."""
-        env_file = ".env"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore"
+    )
 
 
 @lru_cache()
