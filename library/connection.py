@@ -65,6 +65,11 @@ class SnowflakeConnectionManager:
         """
         conn = None
         try:
+            if not self.settings.snowflake_account or not self.settings.snowflake_user:
+                raise SnowflakeConnectionError(
+                    "SNOWFLAKE_ACCOUNT and SNOWFLAKE_USER must be set in environment variables"
+                )
+
             conn = snowflake.connector.connect(
                 account=self.settings.snowflake_account,
                 user=self.settings.snowflake_user,

@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Snowflake
-    snowflake_account: str
-    snowflake_user: str
+    snowflake_account: Optional[str] = None
+    snowflake_user: Optional[str] = None
     snowflake_database: str = "APEXML_DEV"
     snowflake_schema: str = "ANALYTICS"
     snowflake_warehouse: str = "ETL_WH_DEV"
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     snowflake_private_key_path: Path = Path.home() / ".ssh" / "snowflake_key.p8"
 
     # OpenRouter
-    openrouter_api_key: str
+    openrouter_api_key: Optional[str] = None
 
     # Environment
     environment: str = "dev"
