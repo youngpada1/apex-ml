@@ -8,8 +8,13 @@ from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 from extract import extract_session_data, fetch_sessions
-from load import load_all, get_snowflake_connection
+from load import load_all
 import httpx
+
+# Add parent directory to path for library imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from library.connection import connection_manager
 
 # Load environment variables
 project_root = Path(__file__).parent.parent.parent
@@ -34,16 +39,12 @@ async def get_all_race_sessions():
 
 def get_loaded_session_keys():
     """Get list of session_keys already loaded in Snowflake."""
-    conn = get_snowflake_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT DISTINCT session_key FROM APEXML_DEV.RAW.SESSIONS")
-    loaded_keys = {row[0] for row in cursor.fetchall()}
-
-    cursor.close()
-    conn.close()
-
-    return loaded_keys
+    with connection_manager.get_connection(schema="RAW") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT session_key FROM APEXML_DEV.RAW.SESSIONS")
+        loaded_keys = {row[0] for row in cursor.fetchall()}
+        cursor.close()
+        return loaded_keys
 
 
 async def load_historical_data():

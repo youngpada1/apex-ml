@@ -27,13 +27,16 @@ from extract import (
     fetch_positions
 )
 from load import (
-    get_snowflake_connection,
     load_sessions,
     load_drivers,
     load_laps,
     load_positions,
     load_all
 )
+
+# Import connection manager
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from library.connection import connection_manager
 
 # Configure logging
 logging.basicConfig(
@@ -132,19 +135,18 @@ class TestSnowflakeLoading:
         logger.info("Testing Snowflake connection")
 
         try:
-            conn = get_snowflake_connection()
-            cursor = conn.cursor()
+            with connection_manager.get_connection(schema="RAW") as conn:
+                cursor = conn.cursor()
 
-            # Test basic query
-            cursor.execute("SELECT CURRENT_USER(), CURRENT_ROLE(), CURRENT_DATABASE()")
-            result = cursor.fetchone()
+                # Test basic query
+                cursor.execute("SELECT CURRENT_USER(), CURRENT_ROLE(), CURRENT_DATABASE()")
+                result = cursor.fetchone()
 
-            logger.info(f"✓ Connected as: {result[0]}")
-            logger.info(f"✓ Using role: {result[1]}")
-            logger.info(f"✓ Database: {result[2]}")
+                logger.info(f"✓ Connected as: {result[0]}")
+                logger.info(f"✓ Using role: {result[1]}")
+                logger.info(f"✓ Database: {result[2]}")
 
-            cursor.close()
-            conn.close()
+                cursor.close()
 
         except Exception as e:
             logger.error(f"✗ Snowflake connection failed: {e}")
@@ -154,24 +156,23 @@ class TestSnowflakeLoading:
         """Test that required schemas and tables exist."""
         logger.info("Testing schema and table existence")
 
-        conn = get_snowflake_connection()
-        cursor = conn.cursor()
+        with connection_manager.get_connection(schema="RAW") as conn:
+            cursor = conn.cursor()
 
-        required_tables = ['SESSIONS', 'DRIVERS', 'LAPS', 'POSITIONS']
+            required_tables = ['SESSIONS', 'DRIVERS', 'LAPS', 'POSITIONS']
 
-        for table in required_tables:
-            cursor.execute(f"""
-                SELECT COUNT(*)
-                FROM INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = 'RAW'
-                AND TABLE_NAME = '{table}'
-            """)
-            count = cursor.fetchone()[0]
-            assert count == 1, f"Table RAW.{table} does not exist"
-            logger.info(f"✓ Table exists: RAW.{table}")
+            for table in required_tables:
+                cursor.execute(f"""
+                    SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.TABLES
+                    WHERE TABLE_SCHEMA = 'RAW'
+                    AND TABLE_NAME = '{table}'
+                """)
+                count = cursor.fetchone()[0]
+                assert count == 1, f"Table RAW.{table} does not exist"
+                logger.info(f"✓ Table exists: RAW.{table}")
 
-        cursor.close()
-        conn.close()
+            cursor.close()
 
     @pytest.mark.asyncio
     async def test_load_sessions_merge(self):
@@ -182,7 +183,7 @@ class TestSnowflakeLoading:
         session_key = 9158
         data = await extract_session_data(session_key)
 
-        conn = get_snowflake_connection()
+        with connection_manager.get_connection(schema="RAW") as conn:
 
         try:
             # Count before load
@@ -209,7 +210,6 @@ class TestSnowflakeLoading:
             logger.error(f"✗ Sessions MERGE failed: {e}")
             pytest.fail(f"MERGE operation failed: {e}")
         finally:
-            conn.close()
 
     @pytest.mark.asyncio
     async def test_idempotent_loads(self):
@@ -219,7 +219,7 @@ class TestSnowflakeLoading:
         session_key = 9158
         data = await extract_session_data(session_key)
 
-        conn = get_snowflake_connection()
+        with connection_manager.get_connection(schema="RAW") as conn:
         cursor = conn.cursor()
 
         try:
@@ -243,7 +243,6 @@ class TestSnowflakeLoading:
             pytest.fail(f"Idempotency test failed: {e}")
         finally:
             cursor.close()
-            conn.close()
 
 
 class TestDataValidation:
@@ -253,7 +252,7 @@ class TestDataValidation:
         """Test integrity of loaded data."""
         logger.info("Testing loaded data integrity")
 
-        conn = get_snowflake_connection()
+        with connection_manager.get_connection(schema="RAW") as conn:
         cursor = conn.cursor()
 
         try:
@@ -291,13 +290,12 @@ class TestDataValidation:
             pytest.fail(f"Data integrity test failed: {e}")
         finally:
             cursor.close()
-            conn.close()
 
     def test_lap_times_reasonable(self):
         """Test that lap times are within reasonable ranges."""
         logger.info("Testing lap time reasonableness")
 
-        conn = get_snowflake_connection()
+        with connection_manager.get_connection(schema="RAW") as conn:
         cursor = conn.cursor()
 
         try:
@@ -331,7 +329,6 @@ class TestDataValidation:
             pytest.fail(f"Lap time validation failed: {e}")
         finally:
             cursor.close()
-            conn.close()
 
 
 class TestErrorHandling:
@@ -358,7 +355,7 @@ class TestErrorHandling:
 
         try:
             with pytest.raises(Exception):
-                conn = get_snowflake_connection()
+                with connection_manager.get_connection(schema="RAW") as conn:
                 logger.info("✓ Correctly raised exception for invalid connection")
         finally:
             # Restore original value
@@ -373,7 +370,7 @@ class TestLoggingAndMetrics:
         """Test that load metrics are properly logged."""
         logger.info("Testing load metrics logging")
 
-        conn = get_snowflake_connection()
+        with connection_manager.get_connection(schema="RAW") as conn:
         cursor = conn.cursor()
 
         try:
@@ -401,7 +398,6 @@ class TestLoggingAndMetrics:
             pytest.fail(f"Metrics logging test failed: {e}")
         finally:
             cursor.close()
-            conn.close()
 
 
 if __name__ == "__main__":
