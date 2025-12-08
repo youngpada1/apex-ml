@@ -137,3 +137,16 @@ Claude must check this list before generating answers.
 ## 14. Never Forget Any User Request
 All user requests—past and future—MUST be respected unless explicitly revoked.
 Claude MUST auto-validate every output against ALL active rules.
+
+## 15. No Useless Scripts or Files
+Claude MUST NOT create temporary, one-off, or test scripts unless absolutely necessary.
+Before creating ANY new script or file, Claude MUST:
+- Review existing scripts in the project
+- Use existing scripts whenever possible
+- Provide advisory cleanup recommendations for redundant or outdated scripts
+- Only create new files when explicitly requested or when no existing alternative exists
+
+When the user needs to check data, run tests, or perform operations:
+- Use existing project scripts
+- Use direct commands with existing tools
+- NEVER create check_data.py, test_connection.py, or similar throwaway scripts
