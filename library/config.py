@@ -31,11 +31,12 @@ class Settings(BaseSettings):
         env_file=str(PROJECT_ROOT / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore"
+        extra="ignore",
+        env_prefix="",
+        env_nested_delimiter="__"
     )
 
 
-@lru_cache()
 def get_settings() -> Settings:
     """
     Get cached settings instance.
