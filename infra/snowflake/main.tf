@@ -17,10 +17,12 @@ terraform {
 
 provider "snowflake" {
   # Key pair authentication
-  # Account and user from environment variables:
-  # - SNOWFLAKE_ACCOUNT (format: ORGNAME-ACCOUNTNAME)
-  # - SNOWFLAKE_USER
+  # User from environment variable: SNOWFLAKE_USER
+  # Account split into organization_name and account_name (from SNOWFLAKE_ACCOUNT format: ORGNAME-ACCOUNTNAME)
 
+  organization_name   = split("-", var.snowflake_account)[0]
+  account_name        = split("-", var.snowflake_account)[1]
+  user                = var.snowflake_user
   private_key_path    = pathexpand("~/.ssh/snowflake_key.p8")
   role                = "ACCOUNTADMIN"
   authenticator       = "SNOWFLAKE_JWT"
