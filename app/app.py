@@ -29,22 +29,22 @@ st.set_page_config(page_title="ApexML – F1 Analytics", layout="wide")
 
 # Snowflake connection and query
 @st.cache_data(ttl=300)
-def query_snowflake(query):
+def query_snowflake(query: str) -> pd.DataFrame:
     with connection_manager.get_connection(schema="ANALYTICS") as conn:
         return pd.read_sql(query, conn)
 
 @st.cache_resource
-def get_prediction_service():
+def get_prediction_service() -> RacePredictionService:
     """Initialize and cache prediction service."""
     return RacePredictionService()
 
 @st.cache_resource
-def get_performance_service():
+def get_performance_service() -> PerformanceAnalysisService:
     """Initialize and cache performance analysis service."""
     return PerformanceAnalysisService()
 
 @st.cache_resource
-def get_query_builder():
+def get_query_builder() -> F1QueryBuilder:
     """Initialize and cache query builder."""
     return F1QueryBuilder()
 
