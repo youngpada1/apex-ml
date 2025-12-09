@@ -47,7 +47,7 @@ ApexML is a comprehensive data engineering platform that:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│              MODERN DATA ENGINEERING ARCHITECTURE (ELT)              │
+│              MODERN DATA ENGINEERING ARCHITECTURE (ELT)             │
 └─────────────────────────────────────────────────────────────────────┘
 
 1️⃣ EXTRACT & LOAD (Data Ingestion)
@@ -57,7 +57,7 @@ ApexML is a comprehensive data engineering platform that:
    │  ⏰ Snowflake TASK (scheduled every 6 hours)   │
    │           ↓ executes                           │
    │  🐍 Python Stored Procedure                    │
-   │     • Calls OpenF1 API for new race data      │
+   │     • Calls OpenF1 API for new race data       │
    │     • Queries RAW.SESSIONS for existing data   │
    │     • Loads ONLY new sessions (incremental)    │
    │     • Uses MERGE statements (no duplicates)    │
@@ -88,7 +88,7 @@ ApexML is a comprehensive data engineering platform that:
    │    • DRIVERS    (raw API data)         │
    │    • LAPS       (raw API data)         │
    │    • POSITIONS  (raw API data)         │
-   │                                         │
+   │                                        │
    │    Primary Keys enforced on all tables │
    ├────────────────────────────────────────┤
    │           ↓ dbt transformations        │
@@ -110,59 +110,59 @@ ApexML is a comprehensive data engineering platform that:
             ↓
 
 3️⃣ TRANSFORM (dbt - runs INSIDE Snowflake)
-   ┌──────────────────────────────────┐
-   │  dbt Core                        │
-   │  • SQL-based transformations     │
-   │  • Models: RAW → STAGING → ANALYTICS
-   │  • Data quality tests (22 passing)
-   │  • Materializations:             │
-   │    - STAGING: views (fast)       │
-   │    - ANALYTICS: tables (queryable)
-   └──────┬───────────────────────────┘
+   ┌──────────────────────────────────────┐
+   │  dbt Core                            │
+   │  • SQL-based transformations         │
+   │  • Models: RAW → STAGING → ANALYTICS │
+   │  • Data quality tests (22 passing)   │
+   │  • Materializations:                 │
+   │    - STAGING: views (fast)           │
+   │    - ANALYTICS: tables (queryable)   │
+   └──────┬───────────────────────────────┘
           │
           ↓
 
 4️⃣ VISUALIZATION & AI
    ┌──────────────────────────────────────────────────┐
    │  Streamlit Dashboard                             │
-   │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+   │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
    │  📊 Custom Analysis Builder                      │
-   │    • Metrics: Lap times, Positions, Sessions    │
-   │    • Dimensions: Driver, Team, Season, Circuit  │
-   │    • Filters: Driver, Team, Season, Circuit     │
-   │    • Charts: Bar, Line, Scatter, Table          │
-   │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+   │    • Metrics: Lap times, Positions, Sessions     │
+   │    • Dimensions: Driver, Team, Season, Circuit   │
+   │    • Filters: Driver, Team, Season, Circuit      │
+   │    • Charts: Bar, Line, Scatter, Table           │
+   │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
    │  🤖 AI Assistant (ML-Powered)                    │
-   │    • OpenRouter (GPT-4o-mini) - NLP & SQL gen   │
-   │    • scikit-learn - ML predictions              │
+   │    • OpenRouter (GPT-4o-mini) - NLP & SQL gen    │
+   │    • scikit-learn - ML predictions               │
    │                                                  │
    │  Three AI modes:                                 │
-   │  1. Historical: "Who won last race?"            │
-   │     → LLM generates SQL → Query Snowflake       │
+   │  1. Historical: "Who won last race?"             │
+   │     → LLM generates SQL → Query Snowflake        │
    │                                                  │
-   │  2. Predictions: "Who will win next race?"      │
-   │     → Random Forest trains on historical data   │
-   │     → Returns win probabilities per driver      │
+   │  2. Predictions: "Who will win next race?"       │
+   │     → Random Forest trains on historical data    │
+   │     → Returns win probabilities per driver       │
    │                                                  │
-   │  3. Analysis: "Compare Verstappen 2023-2025"    │
-   │     → Multi-season performance trends           │
-   │     → Wins, podiums, avg position by year       │
+   │  3. Analysis: "Compare Verstappen 2023-2025"     │
+   │     → Multi-season performance trends            │
+   │     → Wins, podiums, avg position by year        │
    └──────────────────────────────────────────────────┘
           │
           ↓
 
 5️⃣ INFRASTRUCTURE
-   ┌──────────────────────────────────┐
-   │  Terraform (IaC)                 │
-   │  • Snowflake resources:          │
-   │    - Databases (dev/staging/prod)│
-   │    - Schemas (RAW/STAGING/ANALYTICS)
-   │    - Tables with PK constraints  │
-   │    - Warehouses                  │
-   │    - Roles & Grants              │
-   │  • State: S3 backend + DynamoDB  │
-   │  • CI/CD: GitHub Actions         │
-   └──────────────────────────────────┘
+   ┌─────────────────────────────────────┐
+   │  Terraform (IaC)                    │
+   │  • Snowflake resources:             │
+   │    - Databases (dev/staging/prod)   │
+   │    - Schemas (RAW/STAGING/ANALYTICS)│
+   │    - Tables with PK constraints     │
+   │    - Warehouses                     │
+   │    - Roles & Grants                 │
+   │  • State: S3 backend + DynamoDB     │
+   │  • CI/CD: GitHub Actions            │
+   └─────────────────────────────────────┘
 
 KEY FEATURES:
 ✓ Incremental loading - only new sessions loaded

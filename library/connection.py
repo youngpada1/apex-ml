@@ -24,6 +24,10 @@ import snowflake.connector
 from snowflake.connector import SnowflakeConnection
 from library.config import get_settings
 from library.exceptions import SnowflakeConnectionError
+from library.error_handling import setup_logger, DatabaseError
+
+# Setup logger
+logger = setup_logger(__name__)
 
 
 class SnowflakeConnectionManager:
@@ -66,9 +70,14 @@ class SnowflakeConnectionManager:
         conn = None
         try:
             if not self.settings.snowflake_account or not self.settings.snowflake_user:
-                raise SnowflakeConnectionError(
-                    "SNOWFLAKE_ACCOUNT and SNOWFLAKE_USER must be set in environment variables"
+                error_msg = "SNOWFLAKE_ACCOUNT and SNOWFLAKE_USER must be set in environment variables"
+                logger.error(error_msg)
+                raise DatabaseError(
+                    error_msg,
+                    user_message="Database configuration is incomplete. Please contact support."
                 )
+
+            logger.info(f"Connecting to Snowflake database: {database or self.settings.snowflake_database}")
 
             conn = snowflake.connector.connect(
                 account=self.settings.snowflake_account,
@@ -80,21 +89,31 @@ class SnowflakeConnectionManager:
                 warehouse=warehouse or self.settings.snowflake_warehouse,
                 role=role or self.settings.snowflake_role
             )
+
+            logger.debug("Successfully connected to Snowflake")
             yield conn
 
         except snowflake.connector.errors.Error as e:
-            raise SnowflakeConnectionError(f"Failed to connect to Snowflake: {e}") from e
+            logger.error(f"Snowflake connection error: {e}", exc_info=True)
+            raise DatabaseError(
+                f"Failed to connect to Snowflake: {e}",
+                user_message="Unable to connect to database. Please try again later."
+            ) from e
 
         except Exception as e:
-            raise SnowflakeConnectionError(f"Unexpected error connecting to Snowflake: {e}") from e
+            logger.error(f"Unexpected connection error: {e}", exc_info=True)
+            raise DatabaseError(
+                f"Unexpected error connecting to Snowflake: {e}",
+                user_message="Database connection failed. Please contact support."
+            ) from e
 
         finally:
             if conn:
                 try:
                     conn.close()
-                except Exception:
-                    # Ignore errors during cleanup
-                    pass
+                    logger.debug("Snowflake connection closed")
+                except Exception as e:
+                    logger.warning(f"Error closing connection: {e}")
 
 
 # Singleton instance - import this in other modules

@@ -35,17 +35,36 @@ from constants import (
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from library.connection import connection_manager
+from library.error_handling import (
+    setup_logger, format_user_error, validate_dataframe,
+    retry, DatabaseError, DataNotFoundError
+)
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Setup logger
+logger = setup_logger(__name__, level=os.getenv("LOG_LEVEL", "INFO"))
 
 st.set_page_config(page_title="ApexML – F1 Analytics", layout="wide")
 
 # Snowflake connection and query
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
+@retry(max_attempts=3, delay=1.0, exceptions=(DatabaseError,), logger=logger)
 def query_snowflake(query: str) -> pd.DataFrame:
-    with connection_manager.get_connection(schema="ANALYTICS") as conn:
-        return pd.read_sql(query, conn)
+    """Query Snowflake with automatic retry on failures."""
+    try:
+        with connection_manager.get_connection(schema="ANALYTICS") as conn:
+            df = pd.read_sql(query, conn)
+            if df.empty:
+                logger.warning(f"Query returned no results: {query[:100]}...")
+            return df
+    except Exception as e:
+        logger.error(f"Database query failed: {e}", exc_info=True)
+        raise DatabaseError(
+            f"Failed to execute query: {e}",
+            user_message="Unable to connect to database. Please try again later."
+        )
 
 @st.cache_resource
 def get_prediction_service() -> RacePredictionService:
@@ -102,6 +121,8 @@ with tab1:
         ORDER BY full_name
         """
         drivers_df = query_snowflake(drivers_teams_query)
+        validate_dataframe(drivers_df, required_columns=['FULL_NAME', 'TEAM_NAME'], min_rows=1)
+
         available_drivers = drivers_df['FULL_NAME'].tolist()
         available_teams = sorted(drivers_df['TEAM_NAME'].unique().tolist())
 
@@ -117,6 +138,8 @@ with tab1:
         ORDER BY year DESC, date_start DESC
         """
         seasons_df = query_snowflake(seasons_circuits_query)
+        validate_dataframe(seasons_df, required_columns=['YEAR', 'CIRCUIT_SHORT_NAME', 'LOCATION'], min_rows=1)
+
         available_seasons = sorted(seasons_df['YEAR'].unique().tolist(), reverse=True)
         available_circuits = sorted(seasons_df['CIRCUIT_SHORT_NAME'].unique().tolist())
 
@@ -127,8 +150,17 @@ with tab1:
             if circuit_key not in circuit_display:
                 circuit_display[circuit_key] = f"{row['CIRCUIT_SHORT_NAME']} ({row['LOCATION']})"
 
+    except (DatabaseError, DataNotFoundError) as e:
+        logger.error(f"Failed to load filter options: {e}", exc_info=True)
+        st.error(format_user_error(e))
+        available_drivers = []
+        available_teams = []
+        available_seasons = []
+        available_circuits = []
+        circuit_display = {}
     except Exception as e:
-        st.error(f"Error loading filter options: {e}")
+        logger.error(f"Unexpected error loading filters: {e}", exc_info=True)
+        st.error(format_user_error(e))
         available_drivers = []
         available_teams = []
         available_seasons = []
@@ -224,14 +256,21 @@ with tab1:
                 query = query_builder.build_analytics_query(metrics, dimensions, filters)
                 result_df = query_snowflake(query)
 
+                # Validate results
+                validate_dataframe(result_df, min_rows=1)
+
                 st.subheader("Analysis Results")
                 st.write(f"**Rows returned:** {len(result_df)}")
 
                 # Display visualization using visualization module
                 display_visualization(result_df, viz_type)
 
+            except (DatabaseError, DataNotFoundError) as e:
+                logger.error(f"Analysis generation failed: {e}", exc_info=True)
+                st.error(format_user_error(e))
             except Exception as e:
-                st.error(f"Error generating analysis: {e}")
+                logger.error(f"Unexpected error during analysis: {e}", exc_info=True)
+                st.error(format_user_error(e))
 
 with tab2:
     st.header("💬 AI Assistant (ML-Powered)")
@@ -347,7 +386,11 @@ with tab2:
                                 else:
                                     response = "I couldn't find any data to answer that question. Try asking something else!"
 
+                            except (DatabaseError, DataNotFoundError) as e:
+                                logger.warning(f"Query failed for user question, falling back to AI: {e}")
+                                response = get_ai_response(prompt)
                             except Exception as e:
+                                logger.error(f"Unexpected error in AI assistant query: {e}", exc_info=True)
                                 response = get_ai_response(prompt)
                         else:
                             response = get_ai_response(prompt)

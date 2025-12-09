@@ -6,7 +6,17 @@ separating ML logic from UI presentation.
 from dataclasses import dataclass
 from typing import Optional, List
 import pandas as pd
+import sys
+from pathlib import Path
+
+# Add parent directory to path for library imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from library.error_handling import setup_logger, MLModelError
 from .ml_predictions import RaceWinnerPredictor, PerformanceAnalyzer
+
+# Setup logger
+logger = setup_logger(__name__)
 
 
 @dataclass
@@ -67,11 +77,13 @@ class RacePredictionService:
         try:
             # Use provided circuit or default to generic circuit
             circuit = request.circuit or 'monza'
+            logger.info(f"Predicting race winner for circuit: {circuit}")
 
             # Get predictions
             predictions_df = self.predictor.predict_next_race(circuit)
 
             if predictions_df.empty:
+                logger.warning(f"No predictions available for circuit: {circuit}")
                 return PredictionResult(
                     predictions=pd.DataFrame(),
                     top_5_formatted="",
@@ -82,6 +94,7 @@ class RacePredictionService:
             # Format top 5 predictions
             top_5 = predictions_df.head(5)
             formatted = self._format_predictions(top_5)
+            logger.info(f"Successfully generated predictions for {len(predictions_df)} drivers")
 
             return PredictionResult(
                 predictions=predictions_df,
@@ -90,6 +103,7 @@ class RacePredictionService:
             )
 
         except Exception as e:
+            logger.error(f"Race prediction failed: {e}", exc_info=True)
             return PredictionResult(
                 predictions=pd.DataFrame(),
                 top_5_formatted="",
@@ -144,6 +158,8 @@ class PerformanceAnalysisService:
             PerformanceComparisonResult with analysis data
         """
         try:
+            logger.info(f"Analyzing performance for {request.driver_name} across seasons {request.seasons}")
+
             # Get comparison data
             comparison_df = self.analyzer.compare_driver_seasons(
                 request.driver_name,
@@ -151,6 +167,7 @@ class PerformanceAnalysisService:
             )
 
             if comparison_df.empty:
+                logger.warning(f"No data found for {request.driver_name} in seasons {request.seasons}")
                 return PerformanceComparisonResult(
                     comparison_data=pd.DataFrame(),
                     formatted_summary="",
@@ -160,6 +177,7 @@ class PerformanceAnalysisService:
 
             # Format summary
             formatted = self._format_comparison(request.driver_name, comparison_df)
+            logger.info(f"Successfully analyzed {len(comparison_df)} seasons for {request.driver_name}")
 
             return PerformanceComparisonResult(
                 comparison_data=comparison_df,
@@ -168,6 +186,7 @@ class PerformanceAnalysisService:
             )
 
         except Exception as e:
+            logger.error(f"Performance analysis failed for {request.driver_name}: {e}", exc_info=True)
             return PerformanceComparisonResult(
                 comparison_data=pd.DataFrame(),
                 formatted_summary="",
