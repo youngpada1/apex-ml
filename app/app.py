@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from dotenv import load_dotenv
 from ml.ai_assistant import get_ai_response, generate_sql_from_question, answer_question_from_data
 from ml.ml_predictions import RaceWinnerPredictor, PerformanceAnalyzer, detect_question_type
+from query_builder import F1QueryBuilder, QueryFilters
 
 # Add parent directory to path for library imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
