@@ -5,6 +5,7 @@ Designed to be run daily via GitHub Actions.
 """
 import asyncio
 import sys
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from dotenv import load_dotenv
@@ -17,10 +18,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from library.connection import connection_manager
 from library.config import get_settings
+from library.error_handling import setup_logger
 
 # Load environment variables
 project_root = Path(__file__).parent.parent.parent
 load_dotenv(project_root / '.env')
+
+# Setup logger
+logger = setup_logger(__name__)
 
 
 async def get_recent_race_sessions():
@@ -59,6 +64,14 @@ async def load_new_data():
     """Load new race data that hasn't been loaded yet."""
     settings = get_settings()
 
+    logger.info("="*80)
+    logger.info("F1 INCREMENTAL DATA LOAD")
+    logger.info(f"Environment: {settings.environment.upper()}")
+    logger.info(f"Database: {settings.snowflake_database}")
+    logger.info(f"Started at: {datetime.now().isoformat()}")
+    logger.info("="*80)
+
+    # Also print to stdout for GitHub Actions visibility
     print("="*80, flush=True)
     print("F1 INCREMENTAL DATA LOAD", flush=True)
     print(f"Environment: {settings.environment.upper()}", flush=True)
@@ -66,56 +79,88 @@ async def load_new_data():
     print(f"Started at: {datetime.now().isoformat()}", flush=True)
     print("="*80, flush=True)
 
-    # Get recent race sessions from API
-    print("\n[1/3] Fetching recent race sessions from OpenF1 API...", flush=True)
-    recent_sessions = await get_recent_race_sessions()
-    print(f"Found {len(recent_sessions)} recent race sessions", flush=True)
+    try:
+        # Get recent race sessions from API
+        logger.info("[1/3] Fetching recent race sessions from OpenF1 API...")
+        print("\n[1/3] Fetching recent race sessions from OpenF1 API...", flush=True)
+        recent_sessions = await get_recent_race_sessions()
+        logger.info(f"Found {len(recent_sessions)} recent race sessions")
+        print(f"Found {len(recent_sessions)} recent race sessions", flush=True)
 
-    # Get already loaded sessions
-    print("\n[2/3] Checking what's already loaded in Snowflake...", flush=True)
-    loaded_keys = get_loaded_session_keys()
-    print(f"Already loaded: {len(loaded_keys)} sessions", flush=True)
+        # Get already loaded sessions
+        logger.info("[2/3] Checking what's already loaded in Snowflake...")
+        print("\n[2/3] Checking what's already loaded in Snowflake...", flush=True)
+        loaded_keys = get_loaded_session_keys()
+        logger.info(f"Already loaded: {len(loaded_keys)} sessions")
+        print(f"Already loaded: {len(loaded_keys)} sessions", flush=True)
 
-    # Filter to only new sessions
-    new_sessions = [s for s in recent_sessions if s['session_key'] not in loaded_keys]
-    print(f"New sessions to load: {len(new_sessions)}", flush=True)
+        # Filter to only new sessions
+        new_sessions = [s for s in recent_sessions if s['session_key'] not in loaded_keys]
+        logger.info(f"New sessions to load: {len(new_sessions)}")
+        print(f"New sessions to load: {len(new_sessions)}", flush=True)
 
-    if not new_sessions:
-        print("\nAll recent sessions already loaded. Nothing to do.", flush=True)
-        return
+        if not new_sessions:
+            logger.info("All recent sessions already loaded. Nothing to do.")
+            print("\nAll recent sessions already loaded. Nothing to do.", flush=True)
+            return
 
-    # Load each new session
-    print("\n[3/3] Loading new sessions...", flush=True)
-    loaded_count = 0
+        # Load each new session
+        logger.info("[3/3] Loading new sessions...")
+        print("\n[3/3] Loading new sessions...", flush=True)
+        loaded_count = 0
+        failed_sessions = []
 
-    for i, session in enumerate(new_sessions, 1):
-        session_key = session['session_key']
-        session_name = session.get('session_name', 'Unknown')
-        year = session.get('year', 'Unknown')
-        location = session.get('location', 'Unknown')
+        for i, session in enumerate(new_sessions, 1):
+            session_key = session['session_key']
+            session_name = session.get('session_name', 'Unknown')
+            year = session.get('year', 'Unknown')
+            location = session.get('location', 'Unknown')
 
-        print(f"\n[{i}/{len(new_sessions)}] Loading session {session_key}: {session_name} - {location} ({year})", flush=True)
+            logger.info(f"[{i}/{len(new_sessions)}] Loading session {session_key}: {session_name} - {location} ({year})")
+            print(f"\n[{i}/{len(new_sessions)}] Loading session {session_key}: {session_name} - {location} ({year})", flush=True)
 
-        try:
-            # Extract data for this session
-            data = await extract_session_data(session_key)
+            try:
+                # Extract data for this session
+                data = await extract_session_data(session_key)
 
-            # Load to Snowflake (will use environment-specific database from settings)
-            load_all(data)
+                # Load to Snowflake (will use environment-specific database from settings)
+                load_all(data)
 
-            loaded_count += 1
-            print(f"  ✓ Loaded: {len(data['sessions'])} sessions, {len(data['drivers'])} drivers, "
-                  f"{len(data['laps'])} laps, {len(data['positions'])} positions", flush=True)
+                loaded_count += 1
+                success_msg = f"✓ Loaded: {len(data['sessions'])} sessions, {len(data['drivers'])} drivers, {len(data['laps'])} laps, {len(data['positions'])} positions"
+                logger.info(success_msg)
+                print(f"  {success_msg}", flush=True)
 
-        except Exception as e:
-            print(f"  ✗ ERROR loading session {session_key}: {e}", flush=True)
-            continue
+            except Exception as e:
+                error_msg = f"ERROR loading session {session_key}: {str(e)}"
+                logger.error(error_msg, exc_info=True)
+                print(f"  ✗ {error_msg}", flush=True)
+                failed_sessions.append({'session_key': session_key, 'error': str(e)})
+                continue
 
-    print("\n" + "="*80, flush=True)
-    print(f"INCREMENTAL DATA LOAD COMPLETED", flush=True)
-    print(f"Successfully loaded: {loaded_count}/{len(new_sessions)} sessions", flush=True)
-    print(f"Finished at: {datetime.now().isoformat()}", flush=True)
-    print("="*80, flush=True)
+        # Summary
+        logger.info("="*80)
+        logger.info("INCREMENTAL DATA LOAD COMPLETED")
+        logger.info(f"Successfully loaded: {loaded_count}/{len(new_sessions)} sessions")
+        if failed_sessions:
+            logger.warning(f"Failed sessions: {len(failed_sessions)}")
+            for failed in failed_sessions:
+                logger.warning(f"  Session {failed['session_key']}: {failed['error']}")
+        logger.info(f"Finished at: {datetime.now().isoformat()}")
+        logger.info("="*80)
+
+        print("\n" + "="*80, flush=True)
+        print(f"INCREMENTAL DATA LOAD COMPLETED", flush=True)
+        print(f"Successfully loaded: {loaded_count}/{len(new_sessions)} sessions", flush=True)
+        if failed_sessions:
+            print(f"Failed sessions: {len(failed_sessions)}", flush=True)
+        print(f"Finished at: {datetime.now().isoformat()}", flush=True)
+        print("="*80, flush=True)
+
+    except Exception as e:
+        logger.critical(f"CRITICAL ERROR in load_new_data: {str(e)}", exc_info=True)
+        print(f"\n✗ CRITICAL ERROR: {str(e)}", flush=True)
+        raise
 
 
 if __name__ == "__main__":
