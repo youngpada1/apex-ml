@@ -16,6 +16,20 @@ from ml.prediction_service import (
 )
 from query_builder import F1QueryBuilder, QueryFilters
 from visualizations import display_visualization
+from constants import (
+    METRIC_OPTIONS, METRIC_HELP_TEXT, DEFAULT_METRICS,
+    DIMENSION_OPTIONS, DIMENSION_HELP_TEXT, DEFAULT_DIMENSIONS,
+    VISUALIZATION_OPTIONS, AI_ASSISTANT_DESCRIPTION,
+    CHART_KEYWORDS, TABLE_KEYWORDS, HISTORICAL_KEYWORDS,
+    PREDICTION_KEYWORDS, DRIVER_NAME_MAPPING,
+    DEFAULT_PREDICTION_CIRCUIT, CURRENT_YEAR, PERFORMANCE_SEASONS_LOOKBACK,
+    APP_TITLE, APP_DESCRIPTION, TAB_CUSTOM_ANALYSIS, TAB_AI_ASSISTANT,
+    WARNING_NO_METRICS_DIMENSIONS, WARNING_NO_SEASONS,
+    ERROR_INSUFFICIENT_DATA, ERROR_NO_DATA_FOR_DRIVER,
+    PREDICTION_FALLBACK_MESSAGE, SPINNER_THINKING, SPINNER_TRAINING_MODEL,
+    SPINNER_ANALYZING_PERFORMANCE, CACHE_TTL_SECONDS,
+    SIDEBAR_ML_MODELS, SIDEBAR_AI_INFO, SIDEBAR_DATA_UPDATE, SIDEBAR_GITHUB_BADGE
+)
 
 # Add parent directory to path for library imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -28,7 +42,7 @@ load_dotenv()
 st.set_page_config(page_title="ApexML – F1 Analytics", layout="wide")
 
 # Snowflake connection and query
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=CACHE_TTL_SECONDS)
 def query_snowflake(query: str) -> pd.DataFrame:
     with connection_manager.get_connection(schema="ANALYTICS") as conn:
         return pd.read_sql(query, conn)
@@ -49,11 +63,11 @@ def get_query_builder() -> F1QueryBuilder:
     return F1QueryBuilder()
 
 # Title
-st.title("🏁 ApexML – F1 Race Analytics")
-st.markdown("Real-time F1 data analytics powered by Snowflake, dbt, and OpenF1 API")
+st.title(APP_TITLE)
+st.markdown(APP_DESCRIPTION)
 
 # Main Dashboard
-tab1, tab2 = st.tabs(["🔧 Custom Analysis", "💬 AI Assistant"])
+tab1, tab2 = st.tabs([TAB_CUSTOM_ANALYSIS, TAB_AI_ASSISTANT])
 
 with tab1:
     st.header("🔧 Custom Analysis Builder")
@@ -65,69 +79,18 @@ with tab1:
         st.subheader("Select Metrics")
         metrics = st.multiselect(
             "Choose metrics to analyze",
-            options=[
-                "Average Lap Time",
-                "Best Lap Time",
-                "Total Laps",
-                "Fastest Laps Count",
-                "Average Sector 1",
-                "Average Sector 2",
-                "Average Sector 3",
-                "Average Position",
-                "Best Position",
-                "Worst Position",
-                "Pit Stop Laps",
-                "Total Sessions"
-            ],
-            default=["Average Lap Time", "Total Laps"],
-            help="""
-            📊 LAP PERFORMANCE
-            • Average Lap Time: Mean lap duration in seconds
-            • Best Lap Time: Fastest lap recorded
-            • Total Laps: Count of laps completed
-            • Fastest Laps Count: Number of times driver achieved fastest lap
-
-            ⏱️ SECTOR TIMES
-            • Average Sector 1/2/3: Mean sector times (track is divided into 3 sectors)
-
-            🏁 RACE POSITION
-            • Average/Best/Worst Position: Race finishing positions
-
-            🔧 PIT STRATEGY
-            • Pit Stop Laps: Laps where driver exited pit lane (first lap after pit stop)
-
-            📅 GENERAL
-            • Total Sessions: Number of race sessions
-            """
+            options=METRIC_OPTIONS,
+            default=DEFAULT_METRICS,
+            help=METRIC_HELP_TEXT
         )
 
     with col2:
         st.subheader("Select Dimensions")
         dimensions = st.multiselect(
             "Choose dimensions to group by",
-            options=[
-                "Driver",
-                "Team",
-                "Season",
-                "Circuit",
-                "Laps"
-            ],
-            default=["Driver"],
-            help="""
-            👤 CORE DIMENSIONS
-            • Driver: Group by individual driver (e.g., Max Verstappen, Lewis Hamilton)
-            • Team: Group by constructor/team (e.g., Red Bull Racing, Mercedes)
-
-            📍 TIME & LOCATION
-            • Season: Group by year (e.g., 2023, 2024, 2025)
-            • Circuit: Group by race track (e.g., Monaco, Silverstone, Monza)
-
-            🔍 DETAILED ANALYSIS
-            • Laps: Show lap-by-lap details including lap number, position during lap, and pit stops
-
-            💡 TIP: Combine dimensions for detailed analysis
-            Example: Driver + Circuit shows performance per driver at each track
-            """
+            options=DIMENSION_OPTIONS,
+            default=DEFAULT_DIMENSIONS,
+            help=DIMENSION_HELP_TEXT
         )
 
     # Filters section - load available drivers, teams, seasons, and circuits
@@ -239,14 +202,14 @@ with tab1:
     st.subheader("Visualization Type")
     viz_type = st.selectbox(
         "Choose chart type",
-        options=["Table", "Bar Chart", "Line Chart", "Scatter Plot"]
+        options=VISUALIZATION_OPTIONS
     )
 
     if st.button("Generate Analysis", type="primary"):
         if not metrics or not dimensions:
-            st.warning("Please select at least one metric and one dimension")
+            st.warning(WARNING_NO_METRICS_DIMENSIONS)
         elif not selected_seasons:
-            st.warning("⚠️ Please select at least one season to analyze")
+            st.warning(WARNING_NO_SEASONS)
         else:
             try:
                 # Build query using query builder
@@ -272,12 +235,7 @@ with tab1:
 
 with tab2:
     st.header("💬 AI Assistant (ML-Powered)")
-    st.markdown("""
-    Ask questions about F1 data and get ML-powered predictions and analytics:
-    - **Predictions**: "Who will win the next race?" (ML model trained on historical performance)
-    - **Analysis**: "Compare Verstappen's performance across 2023-2025" (Multi-season trends)
-    - **Historical**: "Who won the last race?" (Real-time data queries)
-    """)
+    st.markdown(AI_ASSISTANT_DESCRIPTION)
 
     # Initialize chat history
     if "messages" not in st.session_state:
@@ -299,10 +257,10 @@ with tab2:
 
         # Generate AI response
         with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
+            with st.spinner(SPINNER_THINKING):
                 # Check if user wants visualizations
-                show_chart = any(word in prompt.lower() for word in ["chart", "plot", "graph", "visualize", "show"])
-                show_table = any(word in prompt.lower() for word in ["table", "show data", "raw data"])
+                show_chart = any(word in prompt.lower() for word in CHART_KEYWORDS)
+                show_table = any(word in prompt.lower() for word in TABLE_KEYWORDS)
 
                 # Detect question type: prediction, analysis, or historical
                 question_type = detect_question_type(prompt)
@@ -312,9 +270,9 @@ with tab2:
                     prediction_service = get_prediction_service()
 
                     # Check if asking about next race winner
-                    if 'next race' in prompt.lower() or 'will win' in prompt.lower():
-                        with st.spinner("Training ML model and generating predictions..."):
-                            request = PredictionRequest(circuit='monza', prompt=prompt)
+                    if any(keyword in prompt.lower() for keyword in PREDICTION_KEYWORDS):
+                        with st.spinner(SPINNER_TRAINING_MODEL):
+                            request = PredictionRequest(circuit=DEFAULT_PREDICTION_CIRCUIT, prompt=prompt)
                             result = prediction_service.predict_race_winner(request)
 
                             if result.success:
@@ -323,9 +281,9 @@ with tab2:
                                 if show_table:
                                     st.dataframe(result.predictions, use_container_width=True)
                             else:
-                                response = result.error_message or "I don't have enough data yet to make predictions."
+                                response = result.error_message or ERROR_INSUFFICIENT_DATA
                     else:
-                        response = "I can predict race winners and performance trends. Try asking 'Who will win the next race?'"
+                        response = PREDICTION_FALLBACK_MESSAGE
 
                 elif question_type == 'analysis':
                     # Handle performance analysis (compare across seasons)
@@ -333,19 +291,16 @@ with tab2:
 
                     # Simple pattern matching for driver name
                     driver = None
-                    if 'verstappen' in prompt.lower():
-                        driver = 'Max Verstappen'
-                    elif 'hamilton' in prompt.lower():
-                        driver = 'Lewis Hamilton'
-                    elif 'leclerc' in prompt.lower():
-                        driver = 'Charles Leclerc'
+                    for key, value in DRIVER_NAME_MAPPING.items():
+                        if key in prompt.lower():
+                            driver = value
+                            break
 
                     if driver:
                         # Compare last 2-3 seasons
-                        current_year = 2025
-                        seasons = [current_year - 2, current_year - 1, current_year]
+                        seasons = [CURRENT_YEAR - i for i in range(PERFORMANCE_SEASONS_LOOKBACK - 1, -1, -1)]
 
-                        with st.spinner(f"Analyzing {driver}'s performance across seasons..."):
+                        with st.spinner(SPINNER_ANALYZING_PERFORMANCE.format(driver=driver)):
                             request = PerformanceComparisonRequest(driver_name=driver, seasons=seasons)
                             result = performance_service.compare_driver_seasons(request)
 
@@ -361,7 +316,7 @@ with tab2:
                                                  markers=True)
                                     st.plotly_chart(fig, use_container_width=True)
                             else:
-                                response = result.error_message or f"No data available for {driver} in those seasons."
+                                response = result.error_message or ERROR_NO_DATA_FOR_DRIVER.format(driver=driver)
                     else:
                         # Fall back to SQL query for other analysis questions
                         sql = generate_sql_from_question(prompt)
@@ -373,7 +328,7 @@ with tab2:
 
                 else:
                     # Historical data questions - use existing SQL pipeline
-                    if any(keyword in prompt.lower() for keyword in ["who", "what", "which", "how many", "fastest", "slowest", "average", "last", "latest"]):
+                    if any(keyword in prompt.lower() for keyword in HISTORICAL_KEYWORDS):
                         sql = generate_sql_from_question(prompt)
 
                         if sql:
@@ -404,8 +359,8 @@ with tab2:
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(f"**Data Source:** {os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV')}.{os.getenv('SNOWFLAKE_SCHEMA', 'ANALYTICS')}")
-st.sidebar.markdown("**Updated:** Real-time via dbt transformations")
-st.sidebar.markdown("**ML Models:** Random Forest (Win Prediction), Gradient Boosting (Performance)")
-st.sidebar.markdown("**AI:** OpenRouter (GPT-4o-mini) + scikit-learn")
+st.sidebar.markdown(SIDEBAR_DATA_UPDATE)
+st.sidebar.markdown(SIDEBAR_ML_MODELS)
+st.sidebar.markdown(SIDEBAR_AI_INFO)
 st.sidebar.markdown("---")
-st.sidebar.markdown("[![GitHub](https://img.shields.io/badge/GitHub-apex--ml-blue?logo=github)](https://github.com/youngpada1/apex-ml)")
+st.sidebar.markdown(SIDEBAR_GITHUB_BADGE)
