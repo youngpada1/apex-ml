@@ -7,8 +7,15 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dotenv import load_dotenv
 from ml.ai_assistant import get_ai_response, generate_sql_from_question, answer_question_from_data
-from ml.ml_predictions import RaceWinnerPredictor, PerformanceAnalyzer, detect_question_type
+from ml.ml_predictions import detect_question_type
+from ml.prediction_service import (
+    RacePredictionService,
+    PerformanceAnalysisService,
+    PredictionRequest,
+    PerformanceComparisonRequest
+)
 from query_builder import F1QueryBuilder, QueryFilters
+from visualizations import display_visualization
 
 # Add parent directory to path for library imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -27,14 +34,19 @@ def query_snowflake(query):
         return pd.read_sql(query, conn)
 
 @st.cache_resource
-def get_ml_predictor():
-    """Initialize and cache ML predictor."""
-    return RaceWinnerPredictor()
+def get_prediction_service():
+    """Initialize and cache prediction service."""
+    return RacePredictionService()
 
 @st.cache_resource
-def get_performance_analyzer():
-    """Initialize and cache performance analyzer."""
-    return PerformanceAnalyzer()
+def get_performance_service():
+    """Initialize and cache performance analysis service."""
+    return PerformanceAnalysisService()
+
+@st.cache_resource
+def get_query_builder():
+    """Initialize and cache query builder."""
+    return F1QueryBuilder()
 
 # Title
 st.title("🏁 ApexML – F1 Race Analytics")
@@ -237,134 +249,23 @@ with tab1:
             st.warning("⚠️ Please select at least one season to analyze")
         else:
             try:
-                # Build query based on selections
-                metric_sql = []
-                if "Average Lap Time" in metrics:
-                    metric_sql.append("AVG(l.lap_duration) as avg_lap_time")
-                if "Best Lap Time" in metrics:
-                    metric_sql.append("MIN(l.lap_duration) as best_lap_time")
-                if "Total Laps" in metrics:
-                    metric_sql.append("COUNT(*) as total_laps")
-                if "Average Position" in metrics:
-                    metric_sql.append("AVG(r.final_position) as avg_position")
-                if "Best Position" in metrics:
-                    metric_sql.append("MIN(r.final_position) as best_position")
-                if "Worst Position" in metrics:
-                    metric_sql.append("MAX(r.final_position) as worst_position")
-                if "Total Sessions" in metrics:
-                    metric_sql.append("COUNT(DISTINCT l.session_key) as total_sessions")
-                if "Pit Stop Laps" in metrics:
-                    metric_sql.append("SUM(CASE WHEN rl.is_pit_out_lap THEN 1 ELSE 0 END) as pit_stop_laps")
-                if "Average Sector 1" in metrics:
-                    metric_sql.append("AVG(l.segment_1_duration) as avg_sector_1")
-                if "Average Sector 2" in metrics:
-                    metric_sql.append("AVG(l.segment_2_duration) as avg_sector_2")
-                if "Average Sector 3" in metrics:
-                    metric_sql.append("AVG(l.segment_3_duration) as avg_sector_3")
-                if "Fastest Laps Count" in metrics:
-                    metric_sql.append("SUM(CASE WHEN l.is_driver_fastest_lap THEN 1 ELSE 0 END) as fastest_laps_count")
+                # Build query using query builder
+                query_builder = get_query_builder()
+                filters = QueryFilters(
+                    seasons=selected_seasons,
+                    drivers=selected_drivers if selected_drivers else None,
+                    teams=selected_teams if selected_teams else None,
+                    circuits=selected_circuits if selected_circuits else None
+                )
 
-                dim_sql = []
-                group_by = []
-                needs_race_results = False
-                needs_raw_laps = "Pit Stop Laps" in metrics
-
-                if "Driver" in dimensions:
-                    dim_sql.append("d.full_name as driver")
-                    group_by.append("d.full_name")
-                if "Team" in dimensions:
-                    dim_sql.append("d.team_name as team")
-                    group_by.append("d.team_name")
-                if "Season" in dimensions:
-                    dim_sql.append("l.year as season")
-                    group_by.append("l.year")
-                if "Circuit" in dimensions:
-                    dim_sql.append("l.circuit_short_name as circuit")
-                    group_by.append("l.circuit_short_name")
-                if "Laps" in dimensions:
-                    dim_sql.append("l.lap_number as lap")
-                    dim_sql.append("l.lap_position as position_during_lap")
-                    dim_sql.append("CASE WHEN rl.is_pit_out_lap THEN 'Yes' ELSE 'No' END as is_pit_lap")
-                    group_by.append("l.lap_number")
-                    group_by.append("l.lap_position")
-                    group_by.append("rl.is_pit_out_lap")
-                    needs_raw_laps = True
-
-                # Build WHERE clause with filters
-                where_conditions = ["l.lap_duration > 0"]
-
-                # Season filter (required - always applied)
-                if selected_seasons:
-                    if len(selected_seasons) == 1:
-                        where_conditions.append(f"l.year = {selected_seasons[0]}")
-                    else:
-                        season_list = ', '.join(map(str, selected_seasons))
-                        where_conditions.append(f"l.year IN ({season_list})")
-
-                # Driver filter (multi-select)
-                if selected_drivers:
-                    if len(selected_drivers) == 1:
-                        where_conditions.append(f"d.full_name = '{selected_drivers[0]}'")
-                    else:
-                        driver_list = "', '".join(selected_drivers)
-                        where_conditions.append(f"d.full_name IN ('{driver_list}')")
-
-                # Team filter (multi-select)
-                if selected_teams:
-                    if len(selected_teams) == 1:
-                        where_conditions.append(f"d.team_name = '{selected_teams[0]}'")
-                    else:
-                        team_list = "', '".join(selected_teams)
-                        where_conditions.append(f"d.team_name IN ('{team_list}')")
-
-                # Circuit filter (multi-select)
-                if selected_circuits:
-                    if len(selected_circuits) == 1:
-                        where_conditions.append(f"l.circuit_short_name = '{selected_circuits[0]}'")
-                    else:
-                        circuit_list = "', '".join(selected_circuits)
-                        where_conditions.append(f"l.circuit_short_name IN ('{circuit_list}')'")
-
-                # Build JOIN clauses
-                join_clauses = ["JOIN dim_drivers d ON l.driver_number = d.driver_number"]
-
-                # Add raw laps join for pit stop data
-                if needs_raw_laps:
-                    raw_laps_table = f"{os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV')}.RAW.LAPS"
-                    join_clauses.append(f"LEFT JOIN {raw_laps_table} rl ON l.session_key = rl.session_key AND l.driver_number = rl.driver_number AND l.lap_number = rl.lap_number")
-
-                # Add race results join if needed (for position metrics)
-                if "Average Position" in metrics or "Best Position" in metrics or "Worst Position" in metrics:
-                    join_clauses.append("LEFT JOIN fct_race_results r ON l.driver_number = r.driver_number AND l.session_key = r.session_key")
-
-                query = f"""
-                SELECT
-                    {', '.join(dim_sql)},
-                    {', '.join(metric_sql)}
-                FROM fct_lap_times l
-                {chr(10).join(join_clauses)}
-                WHERE {' AND '.join(where_conditions)}
-                GROUP BY {', '.join(group_by)}
-                ORDER BY {metric_sql[0].split(' as ')[1]}
-                LIMIT 100
-                """
-
+                query = query_builder.build_analytics_query(metrics, dimensions, filters)
                 result_df = query_snowflake(query)
 
                 st.subheader("Analysis Results")
                 st.write(f"**Rows returned:** {len(result_df)}")
 
-                if viz_type == "Table":
-                    st.dataframe(result_df, use_container_width=True)
-                elif viz_type == "Bar Chart" and not result_df.empty:
-                    fig = px.bar(result_df, x=result_df.columns[0], y=result_df.columns[-1])
-                    st.plotly_chart(fig, use_container_width=True)
-                elif viz_type == "Line Chart" and not result_df.empty:
-                    fig = px.line(result_df, x=result_df.columns[0], y=result_df.columns[-1])
-                    st.plotly_chart(fig, use_container_width=True)
-                elif viz_type == "Scatter Plot" and not result_df.empty and len(result_df.columns) >= 3:
-                    fig = px.scatter(result_df, x=result_df.columns[1], y=result_df.columns[2])
-                    st.plotly_chart(fig, use_container_width=True)
+                # Display visualization using visualization module
+                display_visualization(result_df, viz_type)
 
             except Exception as e:
                 st.error(f"Error generating analysis: {e}")
@@ -408,92 +309,67 @@ with tab2:
 
                 if question_type == 'prediction':
                     # Handle ML predictions
-                    try:
-                        predictor = get_ml_predictor()
+                    prediction_service = get_prediction_service()
 
-                        # Check if asking about next race winner
-                        if 'next race' in prompt.lower() or 'will win' in prompt.lower():
-                            # Extract circuit if mentioned, otherwise use default
-                            # For now, predict for a generic upcoming race
-                            with st.spinner("Training ML model and generating predictions..."):
-                                predictions_df = predictor.predict_next_race('monza')  # Default circuit
+                    # Check if asking about next race winner
+                    if 'next race' in prompt.lower() or 'will win' in prompt.lower():
+                        with st.spinner("Training ML model and generating predictions..."):
+                            request = PredictionRequest(circuit='monza', prompt=prompt)
+                            result = prediction_service.predict_race_winner(request)
 
-                                if not predictions_df.empty:
-                                    top_5 = predictions_df.head(5)
+                            if result.success:
+                                response = result.top_5_formatted
 
-                                    response = f"Based on ML analysis of historical performance:\n\n"
-                                    for idx, row in top_5.iterrows():
-                                        prob_pct = row['win_probability'] * 100
-                                        response += f"- **{row['driver_name']}** ({row['team_name']}): {prob_pct:.1f}% chance\n"
-
-                                    response += "\n*Predictions based on recent race performance, lap times, and historical circuit data.*"
-
-                                    if show_table:
-                                        st.dataframe(predictions_df, use_container_width=True)
-                                else:
-                                    response = "I don't have enough data yet to make predictions. Try asking once historical data is loaded!"
-                        else:
-                            # Other prediction questions
-                            response = "I can predict race winners and performance trends. Try asking 'Who will win the next race?'"
-
-                    except Exception as e:
-                        response = f"ML prediction is still warming up. Historical data may still be loading. Error: {str(e)}"
+                                if show_table:
+                                    st.dataframe(result.predictions, use_container_width=True)
+                            else:
+                                response = result.error_message or "I don't have enough data yet to make predictions."
+                    else:
+                        response = "I can predict race winners and performance trends. Try asking 'Who will win the next race?'"
 
                 elif question_type == 'analysis':
                     # Handle performance analysis (compare across seasons)
-                    try:
-                        analyzer = get_performance_analyzer()
+                    performance_service = get_performance_service()
 
-                        # Simple pattern matching for driver name
-                        # In production, would use NER or better parsing
-                        driver = None
-                        if 'verstappen' in prompt.lower():
-                            driver = 'Max Verstappen'
-                        elif 'hamilton' in prompt.lower():
-                            driver = 'Lewis Hamilton'
-                        elif 'leclerc' in prompt.lower():
-                            driver = 'Charles Leclerc'
+                    # Simple pattern matching for driver name
+                    driver = None
+                    if 'verstappen' in prompt.lower():
+                        driver = 'Max Verstappen'
+                    elif 'hamilton' in prompt.lower():
+                        driver = 'Lewis Hamilton'
+                    elif 'leclerc' in prompt.lower():
+                        driver = 'Charles Leclerc'
 
-                        if driver:
-                            # Compare last 2-3 seasons
-                            current_year = 2025
-                            seasons = [current_year - 2, current_year - 1, current_year]
+                    if driver:
+                        # Compare last 2-3 seasons
+                        current_year = 2025
+                        seasons = [current_year - 2, current_year - 1, current_year]
 
-                            with st.spinner(f"Analyzing {driver}'s performance across seasons..."):
-                                comparison_df = analyzer.compare_driver_seasons(driver, seasons)
+                        with st.spinner(f"Analyzing {driver}'s performance across seasons..."):
+                            request = PerformanceComparisonRequest(driver_name=driver, seasons=seasons)
+                            result = performance_service.compare_driver_seasons(request)
 
-                                if not comparison_df.empty:
-                                    response = f"**{driver}'s Performance Comparison:**\n\n"
+                            if result.success:
+                                response = result.formatted_summary
 
-                                    for _, row in comparison_df.iterrows():
-                                        response += f"**{int(row['YEAR'])} ({row['TEAM_NAME']})**:\n"
-                                        response += f"- Races: {int(row['RACES'])}, Wins: {int(row['WINS'])}, Podiums: {int(row['PODIUMS'])}\n"
-                                        response += f"- Average position: {row['AVG_POSITION']:.2f}\n"
-                                        if row['AVG_LAP_TIME']:
-                                            response += f"- Average lap time: {row['AVG_LAP_TIME']:.2f}s\n"
-                                        response += "\n"
+                                if show_table:
+                                    st.dataframe(result.comparison_data, use_container_width=True)
 
-                                    if show_table:
-                                        st.dataframe(comparison_df, use_container_width=True)
-
-                                    if show_chart:
-                                        fig = px.line(comparison_df, x='YEAR', y='WINS',
-                                                     title=f"{driver} - Wins by Season",
-                                                     markers=True)
-                                        st.plotly_chart(fig, use_container_width=True)
-                                else:
-                                    response = f"No data available for {driver} in those seasons."
-                        else:
-                            # Fall back to SQL query for other analysis questions
-                            sql = generate_sql_from_question(prompt)
-                            if sql:
-                                result_df = query_snowflake(sql)
-                                response = answer_question_from_data(prompt, result_df)
+                                if show_chart:
+                                    fig = px.line(result.comparison_data, x='YEAR', y='WINS',
+                                                 title=f"{driver} - Wins by Season",
+                                                 markers=True)
+                                    st.plotly_chart(fig, use_container_width=True)
                             else:
-                                response = get_ai_response(prompt)
-
-                    except Exception as e:
-                        response = f"Performance analysis failed: {str(e)}"
+                                response = result.error_message or f"No data available for {driver} in those seasons."
+                    else:
+                        # Fall back to SQL query for other analysis questions
+                        sql = generate_sql_from_question(prompt)
+                        if sql:
+                            result_df = query_snowflake(sql)
+                            response = answer_question_from_data(prompt, result_df)
+                        else:
+                            response = get_ai_response(prompt)
 
                 else:
                     # Historical data questions - use existing SQL pipeline
