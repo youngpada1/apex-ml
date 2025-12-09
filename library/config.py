@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     # Cache TTL in seconds (overrides app constants if needed)
     cache_ttl_seconds: int = 300
 
+    # Connection pool size
+    connection_pool_size: int = 5
+
     # Debug mode
     debug: bool = False
 
