@@ -329,7 +329,8 @@ with tab1:
 
                 # Add raw laps join for pit stop data
                 if needs_raw_laps:
-                    join_clauses.append("LEFT JOIN APEXML_DEV.RAW.LAPS rl ON l.session_key = rl.session_key AND l.driver_number = rl.driver_number AND l.lap_number = rl.lap_number")
+                    raw_laps_table = f"{os.getenv('SNOWFLAKE_DATABASE', 'APEXML_DEV')}.RAW.LAPS"
+                    join_clauses.append(f"LEFT JOIN {raw_laps_table} rl ON l.session_key = rl.session_key AND l.driver_number = rl.driver_number AND l.lap_number = rl.lap_number")
 
                 # Add race results join if needed (for position metrics)
                 if "Average Position" in metrics or "Best Position" in metrics or "Worst Position" in metrics:
@@ -346,10 +347,6 @@ with tab1:
                 ORDER BY {metric_sql[0].split(' as ')[1]}
                 LIMIT 100
                 """
-
-                # Debug: Show the generated query
-                with st.expander("🔍 Debug: View Generated SQL Query"):
-                    st.code(query, language="sql")
 
                 result_df = query_snowflake(query)
 
@@ -533,3 +530,5 @@ st.sidebar.markdown(f"**Data Source:** {os.getenv('SNOWFLAKE_DATABASE', 'APEXML_
 st.sidebar.markdown("**Updated:** Real-time via dbt transformations")
 st.sidebar.markdown("**ML Models:** Random Forest (Win Prediction), Gradient Boosting (Performance)")
 st.sidebar.markdown("**AI:** OpenRouter (GPT-4o-mini) + scikit-learn")
+st.sidebar.markdown("---")
+st.sidebar.markdown("[![GitHub](https://img.shields.io/badge/GitHub-apex--ml-blue?logo=github)](https://github.com/youngpada1/apex-ml)")
