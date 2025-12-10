@@ -51,7 +51,8 @@ resource "snowflake_task" "dbt_transform_task" {
 
   depends_on = [
     snowflake_stream_on_table.sessions_stream,
-    snowflake_schema.analytics
+    snowflake_schema.analytics,
+    snowflake_procedure_python.dbt_transformations
   ]
 }
 
