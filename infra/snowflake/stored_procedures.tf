@@ -18,8 +18,6 @@ resource "snowflake_procedure_python" "dbt_transformations" {
 
   packages = ["snowflake-snowpark-python", "dbt-core", "dbt-snowflake"]
 
-  snowpark_package = "3.11"
-
   handler = "run_dbt"
 
   procedure_definition = <<-EOT
