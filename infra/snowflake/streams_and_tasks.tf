@@ -41,10 +41,14 @@ resource "snowflake_task" "dbt_transform_task" {
   name      = "DBT_TRANSFORM_TASK"
   comment   = "Task to run dbt transformations when new data arrives in RAW.SESSIONS"
   warehouse = snowflake_warehouse.etl_warehouse.name
+  started   = false # Start disabled - enable after configuring dbt execution method
 
   # Run every 5 minutes, but only when stream has data
-  schedule = "5 MINUTE"
-  when     = "SYSTEM$STREAM_HAS_DATA('${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_stream_on_table.sessions_stream.name}')"
+  schedule {
+    minutes = 5
+  }
+
+  when = "SYSTEM$STREAM_HAS_DATA('${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_stream_on_table.sessions_stream.name}')"
 
   # Placeholder SQL - replace with actual dbt execution method
   # Option 1: dbt Cloud
@@ -55,8 +59,6 @@ resource "snowflake_task" "dbt_transform_task" {
 
   # Option 3: Simple placeholder for manual configuration
   sql_statement = "SELECT 'DBT transformation placeholder - configure with dbt Cloud or external function' AS MESSAGE"
-
-  enabled = false # Start disabled - enable after configuring dbt execution method
 
   depends_on = [
     snowflake_stream_on_table.sessions_stream,
