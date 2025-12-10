@@ -24,7 +24,10 @@ lap_facts AS (
         l.is_pit_out_lap,
         s.session_type,
         s.circuit_short_name,
-        s.year,
+        s.location,
+        s.country_name,
+        s.season,
+        s.race_number,
         d.team_name,
         d.full_name AS driver_name,
         ROW_NUMBER() OVER (
@@ -56,7 +59,10 @@ SELECT
     segment_3_duration,
     session_type,
     circuit_short_name,
-    year,
+    location,
+    country_name,
+    season,
+    race_number,
     lap_position,
     CASE
         WHEN lap_duration = driver_fastest_lap THEN TRUE

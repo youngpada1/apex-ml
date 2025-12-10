@@ -21,7 +21,9 @@ final_positions AS (
         s.session_name,
         s.circuit_short_name,
         s.location,
-        s.year,
+        s.country_name,
+        s.season,
+        s.race_number,
         s.date_start,
         d.full_name AS driver_name,
         d.team_name
@@ -44,8 +46,10 @@ SELECT
     session_name,
     circuit_short_name,
     location,
-    year,
+    country_name,
+    season,
+    race_number,
     date_start,
     CURRENT_TIMESTAMP() AS updated_at
 FROM final_positions
-ORDER BY session_key, final_position
+ORDER BY season, race_number, final_position

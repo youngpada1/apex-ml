@@ -15,7 +15,12 @@ cleaned AS (
         location,
         country_name,
         circuit_short_name,
-        year,
+        year AS season,
+        -- Extract race number from session metadata (Race sessions only)
+        ROW_NUMBER() OVER (
+            PARTITION BY year, session_type
+            ORDER BY date_start
+        ) AS race_number,
         ingested_at,
         CASE
             WHEN date_start IS NULL OR date_end IS NULL THEN FALSE
