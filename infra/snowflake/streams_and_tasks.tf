@@ -8,8 +8,8 @@
 resource "snowflake_stream_on_table" "sessions_stream" {
   database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   schema   = snowflake_schema.raw.name
-  name     = "SESSIONS_STREAM"
-  comment  = "Stream to monitor new race sessions loaded into RAW.SESSIONS table"
+  name     = var.environment == "dev" ? "STREAM_DBT_TRANSFORMATIONS_DEV" : (var.environment == "staging" ? "STREAM_DBT_TRANSFORMATIONS_STAGING" : "STREAM_DBT_TRANSFORMATIONS_PROD")
+  comment  = "Stream to monitor new race sessions loaded into RAW.SESSIONS table (${upper(var.environment)})"
 
   table              = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.SESSIONS"
   show_initial_rows  = false # Only capture changes after stream creation
@@ -31,34 +31,23 @@ resource "snowflake_grant_privileges_to_account_role" "sessions_stream_select" {
 }
 
 # Task to run dbt transformations when stream has data
-# Note: This task definition is a placeholder - actual dbt execution requires either:
-# 1. dbt Cloud (use SYSTEM$RUN_DBT_CLOUD_JOB)
-# 2. External function integration to trigger dbt Core
-# 3. Stored procedure that runs dbt commands via Python
 resource "snowflake_task" "dbt_transform_task" {
   database  = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   schema    = snowflake_schema.analytics.name
-  name      = "DBT_TRANSFORM_TASK"
-  comment   = "Task to run dbt transformations when new data arrives in RAW.SESSIONS"
+  name      = var.environment == "dev" ? "TASK_DBT_TRANSFORMATIONS_DEV" : (var.environment == "staging" ? "TASK_DBT_TRANSFORMATIONS_STAGING" : "TASK_DBT_TRANSFORMATIONS_PROD")
+  comment   = "Task to run dbt transformations when new data arrives in RAW.SESSIONS (${upper(var.environment)})"
   warehouse = snowflake_warehouse.etl_warehouse.name
-  started   = false # Start disabled - enable after configuring dbt execution method
+  started   = false # Start disabled - enable after stored procedure is deployed
 
-  # Run every 5 minutes, but only when stream has data
+  # Run weekly on Saturday at 9 AM UTC, but only when stream has data
   schedule {
-    minutes = 5
+    using_cron = "0 9 * * SAT UTC"
   }
 
   when = "SYSTEM$STREAM_HAS_DATA('${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_stream_on_table.sessions_stream.name}')"
 
-  # Placeholder SQL - replace with actual dbt execution method
-  # Option 1: dbt Cloud
-  # sql_statement = "CALL SYSTEM$RUN_DBT_CLOUD_JOB(<account_id>, <job_id>)"
-
-  # Option 2: External function (requires setup)
-  # sql_statement = "CALL ${snowflake_schema.analytics.name}.RUN_DBT_CORE()"
-
-  # Option 3: Simple placeholder for manual configuration
-  sql_statement = "SELECT 'DBT transformation placeholder - configure with dbt Cloud or external function' AS MESSAGE"
+  # Call Python stored procedure to run dbt transformations
+  sql_statement = var.environment == "dev" ? "CALL ${snowflake_schema.analytics.name}.STORED_PROCEDURE_DBT_TRANSFORMATIONS_DEV()" : (var.environment == "staging" ? "CALL ${snowflake_schema.analytics.name}.STORED_PROCEDURE_DBT_TRANSFORMATIONS_STAGING()" : "CALL ${snowflake_schema.analytics.name}.STORED_PROCEDURE_DBT_TRANSFORMATIONS_PROD()")
 
   depends_on = [
     snowflake_stream_on_table.sessions_stream,
