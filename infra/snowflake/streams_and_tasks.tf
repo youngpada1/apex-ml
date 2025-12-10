@@ -5,28 +5,28 @@
 # Tasks automatically trigger dbt transformations when stream detects new data
 
 # Stream on SESSIONS table to detect new data
-resource "snowflake_stream" "sessions_stream" {
+resource "snowflake_stream_on_table" "sessions_stream" {
   database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
   schema   = snowflake_schema.raw.name
   name     = "SESSIONS_STREAM"
   comment  = "Stream to monitor new race sessions loaded into RAW.SESSIONS table"
 
-  on_table          = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.SESSIONS"
-  show_initial_rows = false # Only capture changes after stream creation
+  table              = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.SESSIONS"
+  show_initial_rows  = false # Only capture changes after stream creation
 
   depends_on = [
     snowflake_table.sessions
   ]
 }
 
-# Grant stream permissions to CRUD role
+# Grant stream permissions to WRITE role
 resource "snowflake_grant_privileges_to_account_role" "sessions_stream_select" {
-  account_role_name = var.environment == "dev" ? snowflake_account_role.crud_dev[0].name : (var.environment == "staging" ? snowflake_account_role.crud_staging[0].name : snowflake_account_role.crud_prod[0].name)
+  account_role_name = snowflake_account_role.write.name
   privileges        = ["SELECT"]
 
   on_schema_object {
     object_type = "STREAM"
-    object_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_stream.sessions_stream.name}"
+    object_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_stream_on_table.sessions_stream.name}"
   }
 }
 
@@ -40,11 +40,11 @@ resource "snowflake_task" "dbt_transform_task" {
   schema    = snowflake_schema.analytics.name
   name      = "DBT_TRANSFORM_TASK"
   comment   = "Task to run dbt transformations when new data arrives in RAW.SESSIONS"
-  warehouse = var.environment == "dev" ? snowflake_warehouse.dev[0].name : (var.environment == "staging" ? snowflake_warehouse.staging[0].name : snowflake_warehouse.prod[0].name)
+  warehouse = snowflake_warehouse.etl_warehouse.name
 
   # Run every 5 minutes, but only when stream has data
   schedule = "5 MINUTE"
-  when     = "SYSTEM$STREAM_HAS_DATA('${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_stream.sessions_stream.name}')"
+  when     = "SYSTEM$STREAM_HAS_DATA('${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_stream_on_table.sessions_stream.name}')"
 
   # Placeholder SQL - replace with actual dbt execution method
   # Option 1: dbt Cloud
@@ -59,14 +59,14 @@ resource "snowflake_task" "dbt_transform_task" {
   enabled = false # Start disabled - enable after configuring dbt execution method
 
   depends_on = [
-    snowflake_stream.sessions_stream,
+    snowflake_stream_on_table.sessions_stream,
     snowflake_schema.analytics
   ]
 }
 
-# Grant task permissions to CRUD role
+# Grant task permissions to ADMIN role
 resource "snowflake_grant_privileges_to_account_role" "dbt_task_operate" {
-  account_role_name = var.environment == "dev" ? snowflake_account_role.crud_dev[0].name : (var.environment == "staging" ? snowflake_account_role.crud_staging[0].name : snowflake_account_role.crud_prod[0].name)
+  account_role_name = snowflake_account_role.admin.name
   privileges        = ["OPERATE", "MONITOR"]
 
   on_schema_object {
@@ -77,7 +77,7 @@ resource "snowflake_grant_privileges_to_account_role" "dbt_task_operate" {
 
 # Grant task permissions to READ role for monitoring
 resource "snowflake_grant_privileges_to_account_role" "dbt_task_monitor" {
-  account_role_name = var.environment == "dev" ? snowflake_account_role.read_dev[0].name : (var.environment == "staging" ? snowflake_account_role.read_staging[0].name : snowflake_account_role.read_prod[0].name)
+  account_role_name = snowflake_account_role.read.name
   privileges        = ["MONITOR"]
 
   on_schema_object {
@@ -88,7 +88,7 @@ resource "snowflake_grant_privileges_to_account_role" "dbt_task_monitor" {
 
 # Output task and stream information
 output "sessions_stream_name" {
-  value       = snowflake_stream.sessions_stream.name
+  value       = snowflake_stream_on_table.sessions_stream.name
   description = "Name of the stream monitoring SESSIONS table"
 }
 
