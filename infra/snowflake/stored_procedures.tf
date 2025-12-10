@@ -16,9 +16,9 @@ resource "snowflake_procedure_python" "dbt_transformations" {
 
   runtime_version = "3.11"
 
-  packages = ["snowflake-snowpark-python", "dbt-core", "dbt-snowflake"]
+  packages = ["dbt-core", "dbt-snowflake"]
 
-  snowpark_package = "3.11.0"
+  snowpark_package = "3.11"
 
   handler = "run_dbt"
 
