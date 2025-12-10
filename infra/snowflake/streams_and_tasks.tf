@@ -47,7 +47,7 @@ resource "snowflake_task" "dbt_transform_task" {
   when = "SYSTEM$STREAM_HAS_DATA('${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_stream_on_table.sessions_stream.name}')"
 
   # Call Python stored procedure to run dbt transformations
-  sql_statement = var.environment == "dev" ? "CALL ${snowflake_schema.analytics.name}.STORED_PROCEDURE_DBT_TRANSFORMATIONS_DEV()" : (var.environment == "staging" ? "CALL ${snowflake_schema.analytics.name}.STORED_PROCEDURE_DBT_TRANSFORMATIONS_STAGING()" : "CALL ${snowflake_schema.analytics.name}.STORED_PROCEDURE_DBT_TRANSFORMATIONS_PROD()")
+  sql_statement = var.environment == "dev" ? "CALL ${snowflake_schema.raw.name}.STORED_PROCEDURE_DBT_TRANSFORMATIONS_DEV()" : (var.environment == "staging" ? "CALL ${snowflake_schema.raw.name}.STORED_PROCEDURE_DBT_TRANSFORMATIONS_STAGING()" : "CALL ${snowflake_schema.raw.name}.STORED_PROCEDURE_DBT_TRANSFORMATIONS_PROD()")
 
   depends_on = [
     snowflake_stream_on_table.sessions_stream,

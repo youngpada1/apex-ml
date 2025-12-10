@@ -8,17 +8,17 @@
 # Python stored procedure to run dbt transformations
 resource "snowflake_procedure_python" "dbt_transformations" {
   database = var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)
-  schema   = snowflake_schema.analytics.name
+  schema   = snowflake_schema.raw.name
   name     = var.environment == "dev" ? "STORED_PROCEDURE_DBT_TRANSFORMATIONS_DEV" : (var.environment == "staging" ? "STORED_PROCEDURE_DBT_TRANSFORMATIONS_STAGING" : "STORED_PROCEDURE_DBT_TRANSFORMATIONS_PROD")
   comment  = "Python stored procedure to execute dbt transformations (${upper(var.environment)})"
 
   return_type = "VARCHAR"
 
-  runtime_version = "3.8"
+  runtime_version = "3.11"
 
   packages = ["snowflake-snowpark-python", "dbt-core", "dbt-snowflake"]
 
-  snowpark_package = "3.8"
+  snowpark_package = "3.11"
 
   handler = "run_dbt"
 
@@ -78,7 +78,7 @@ def run_dbt():
 EOT
 
   depends_on = [
-    snowflake_schema.analytics
+    snowflake_schema.raw
   ]
 }
 
@@ -89,7 +89,7 @@ resource "snowflake_grant_privileges_to_account_role" "dbt_procedure_admin" {
 
   on_schema_object {
     object_type = "PROCEDURE"
-    object_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}.${snowflake_procedure_python.dbt_transformations.name}()"
+    object_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_procedure_python.dbt_transformations.name}()"
   }
 }
 
@@ -100,7 +100,7 @@ resource "snowflake_grant_privileges_to_account_role" "dbt_procedure_write" {
 
   on_schema_object {
     object_type = "PROCEDURE"
-    object_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.analytics.name}.${snowflake_procedure_python.dbt_transformations.name}()"
+    object_name = "${var.environment == "dev" ? snowflake_database.apexml_dev[0].name : (var.environment == "staging" ? snowflake_database.apexml_staging[0].name : snowflake_database.apexml_prod[0].name)}.${snowflake_schema.raw.name}.${snowflake_procedure_python.dbt_transformations.name}()"
   }
 }
 
