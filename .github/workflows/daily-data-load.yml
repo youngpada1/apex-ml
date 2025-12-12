@@ -1,0 +1,62 @@
+name: Daily F1 Data Load
+
+on:
+  schedule:
+    # Run daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:  # Allow manual triggers for testing
+
+jobs:
+  load-data:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, staging, prod]
+      fail-fast: false  # Continue other environments if one fails
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Setup Snowflake private key
+        run: |
+          mkdir -p $HOME/.ssh
+          cat > $HOME/.ssh/snowflake_key.p8 << 'EOF'
+          ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          EOF
+          chmod 600 $HOME/.ssh/snowflake_key.p8
+
+      - name: Load new F1 data to ${{ matrix.environment }}
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PRIVATE_KEY_PATH: $HOME/.ssh/snowflake_key.p8
+          SNOWFLAKE_WAREHOUSE_DEV: ${{ secrets.SNOWFLAKE_WAREHOUSE_DEV }}
+          SNOWFLAKE_WAREHOUSE_STAGING: ${{ secrets.SNOWFLAKE_WAREHOUSE_STAGING }}
+          SNOWFLAKE_WAREHOUSE_PROD: ${{ secrets.SNOWFLAKE_WAREHOUSE_PROD }}
+          SNOWFLAKE_DATABASE_DEV: ${{ secrets.SNOWFLAKE_DATABASE_DEV }}
+          SNOWFLAKE_DATABASE_STAGING: ${{ secrets.SNOWFLAKE_DATABASE_STAGING }}
+          SNOWFLAKE_DATABASE_PROD: ${{ secrets.SNOWFLAKE_DATABASE_PROD }}
+          SNOWFLAKE_ROLE_CRUD_DEV: ${{ secrets.SNOWFLAKE_ROLE_CRUD_DEV }}
+          SNOWFLAKE_ROLE_CRUD_STAGING: ${{ secrets.SNOWFLAKE_ROLE_CRUD_STAGING }}
+          SNOWFLAKE_ROLE_CRUD_PROD: ${{ secrets.SNOWFLAKE_ROLE_CRUD_PROD }}
+        run: |
+          cd snowflake/elt
+          python load_new_data.py
+
+      - name: Report results
+        if: always()
+        run: |
+          echo "Data load for ${{ matrix.environment }} completed with status: ${{ job.status }}"
