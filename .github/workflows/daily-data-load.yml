@@ -32,7 +32,9 @@ jobs:
       - name: Setup Snowflake private key
         run: |
           mkdir -p $HOME/.ssh
-          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > $HOME/.ssh/snowflake_key.p8
+          cat > $HOME/.ssh/snowflake_key.p8 << 'EOF'
+          ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          EOF
           chmod 600 $HOME/.ssh/snowflake_key.p8
 
       - name: Load new F1 data to ${{ matrix.environment }}
