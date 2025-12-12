@@ -29,12 +29,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Setup Snowflake private key
+        run: |
+          mkdir -p $HOME/.ssh
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > $HOME/.ssh/snowflake_key.p8
+          chmod 600 $HOME/.ssh/snowflake_key.p8
+
       - name: Load new F1 data to ${{ matrix.environment }}
         env:
           ENVIRONMENT: ${{ matrix.environment }}
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_PRIVATE_KEY_PATH: $HOME/.ssh/snowflake_key.p8
           SNOWFLAKE_WAREHOUSE_DEV: ${{ secrets.SNOWFLAKE_WAREHOUSE_DEV }}
           SNOWFLAKE_WAREHOUSE_STAGING: ${{ secrets.SNOWFLAKE_WAREHOUSE_STAGING }}
           SNOWFLAKE_WAREHOUSE_PROD: ${{ secrets.SNOWFLAKE_WAREHOUSE_PROD }}
