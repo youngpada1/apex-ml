@@ -46,13 +46,13 @@ jobs:
           ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
           EOF
           chmod 600 $HOME/.ssh/snowflake_key.p8
+          echo "SNOWFLAKE_PRIVATE_KEY_PATH=$HOME/.ssh/snowflake_key.p8" >> $GITHUB_ENV
 
       - name: Load new F1 data to ${{ steps.env.outputs.environment }}
         env:
           ENVIRONMENT: ${{ steps.env.outputs.environment }}
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PRIVATE_KEY_PATH: $HOME/.ssh/snowflake_key.p8
           SNOWFLAKE_WAREHOUSE_DEV: ${{ secrets.SNOWFLAKE_WAREHOUSE_DEV }}
           SNOWFLAKE_WAREHOUSE_STAGING: ${{ secrets.SNOWFLAKE_WAREHOUSE_STAGING }}
           SNOWFLAKE_WAREHOUSE_PROD: ${{ secrets.SNOWFLAKE_WAREHOUSE_PROD }}
