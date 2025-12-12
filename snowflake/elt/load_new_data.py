@@ -24,6 +24,10 @@ from library.error_handling import setup_logger
 project_root = Path(__file__).parent.parent.parent
 load_dotenv(project_root / '.env')
 
+# Clear settings cache to ensure environment variables are read fresh
+# This is necessary because GitHub Actions sets env vars after module import
+get_settings.cache_clear()
+
 # Setup logger
 logger = setup_logger(__name__)
 
