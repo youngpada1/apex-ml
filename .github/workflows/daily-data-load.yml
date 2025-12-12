@@ -12,12 +12,19 @@ permissions:
 jobs:
   load-data:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        environment: [dev, staging, prod]
-      fail-fast: false  # Continue other environments if one fails
 
     steps:
+      - name: Determine environment
+        id: env
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" == "staging" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -40,9 +47,9 @@ jobs:
           EOF
           chmod 600 $HOME/.ssh/snowflake_key.p8
 
-      - name: Load new F1 data to ${{ matrix.environment }}
+      - name: Load new F1 data to ${{ steps.env.outputs.environment }}
         env:
-          ENVIRONMENT: ${{ matrix.environment }}
+          ENVIRONMENT: ${{ steps.env.outputs.environment }}
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PRIVATE_KEY_PATH: $HOME/.ssh/snowflake_key.p8
@@ -62,4 +69,4 @@ jobs:
       - name: Report results
         if: always()
         run: |
-          echo "Data load for ${{ matrix.environment }} completed with status: ${{ job.status }}"
+          echo "Data load for ${{ steps.env.outputs.environment }} completed with status: ${{ job.status }}"
