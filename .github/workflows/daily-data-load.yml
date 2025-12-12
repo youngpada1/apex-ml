@@ -6,6 +6,9 @@ on:
     - cron: '0 6 * * *'
   workflow_dispatch:  # Allow manual triggers for testing
 
+permissions:
+  contents: read
+
 jobs:
   load-data:
     runs-on: ubuntu-latest
