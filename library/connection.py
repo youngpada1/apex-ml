@@ -76,14 +76,6 @@ class SnowflakeConnectionManager:
         Raises:
             DatabaseError: If connection fails
         """
-        if not self.settings.snowflake_account or not self.settings.snowflake_user:
-            error_msg = "SNOWFLAKE_ACCOUNT and SNOWFLAKE_USER must be set in environment variables"
-            logger.error(error_msg)
-            raise DatabaseError(
-                error_msg,
-                user_message="Database configuration is incomplete. Please contact support."
-            )
-
         try:
             logger.debug(f"Creating new connection to database: {database or self.settings.snowflake_database}")
 
